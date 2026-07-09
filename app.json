@@ -2,6 +2,7 @@
   "expo": {
     "name": "selloGuardianNuevo",
     "slug": "selloGuardianNuevo",
+    "scheme": "selloguardian",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/LogoSelloG.png",
@@ -21,7 +22,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ]
   }
 }
