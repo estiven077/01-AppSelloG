@@ -12,11 +12,9 @@ export default function Home() {
     <ScrollView style={styles.container}>
 
       <Image
-        source={{
-          uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200",
-        }}
-        style={styles.imagen}
-      />
+  source={require("../../assets/fondo.jpg")}
+  style={styles.imagen}
+/>
 
       <View style={styles.overlay}>
         <Text style={styles.titulo}>
@@ -47,6 +45,7 @@ export default function Home() {
           • Adoptar{"\n"}
           • Reportar maltrato{"\n"}
           • Buscar mascotas perdidas
+
         </Text>
       </View>
 
