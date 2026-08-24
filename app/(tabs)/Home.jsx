@@ -1,116 +1,841 @@
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
+  TextInput,
   TouchableOpacity,
   ScrollView,
+  ImageBackground,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  Alert,
+  Platform,
+  Dimensions,
+  Modal,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter} from "expo-router";
+import { useNavigation } from "expo-router";
+import { DrawerTrigger } from "expo-router/drawer";
+import { useMenu } from "../../context/menuContext";
+
+
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Paleta — Material 3 (Morado Claro & Vívido)
+const COLORS = {
+  primary: "#c084fc",
+  primaryContainer: "#9333ea",
+  onPrimaryContainer: "#ffffff",
+  surface: "#0f0d15",
+  surfaceContainer: "#181524",
+  surfaceContainerHigh: "#231f33",
+  onSurface: "#f5f3ff",
+  onSurfaceVariant: "#c4b5fd",
+  cardBg: "rgba(255, 255, 255, 0.05)",
+  cardBorder: "rgba(255, 255, 255, 0.12)",
+  error: "#ffb4ab",
+  success: "#4ade80",
+};
+
+// Datos de ejemplo extendidos con Nombre, Vacunas e Historial Médico
+const REPORTS = [
+  {
+    id: "r1",
+    title: "Canino en abandono",
+    name: "Apolo",
+    location: "Calle 45 #23-10, Bogotá DC",
+    breed: "Mestizo (Canino)",
+    age: "Aprox. 2 años",
+    gender: "Macho",
+    status: "Urgente",
+    vaccines: "Rabia (Sí), Pentavalente (Incompleta)",
+    medicalHistory: "Desnutrición leve, heridas superficiales tratadas. Sin parásitos internos.",
+    history:
+      "Fue rescatado vagando cerca de una vía principal tras ser abandonado. Mostraba desnutrición leve y temor, pero ha respondido muy bien a los cuidados básicos y refugio temporal.",
+    image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80",
+    tags: [
+      { label: "URGENTE", color: "#ef4444" },
+      { label: "MALTRATO", color: "#f97316" },
+    ],
+  },
+  {
+    id: "r2",
+    title: "Camada de gatos",
+    name: "Hermanos Pelusa (3)",
+    location: "Carrera 7 con Calle 12, Chía",
+    breed: "Mestizos (Felinos)",
+    age: "Aprox. 3 meses",
+    gender: "Hembras / Machos",
+    status: "En Proceso",
+    vaccines: "Sin vacunas (Requiere esquema de cachorros)",
+    medicalHistory: "Desparasitados recientemente. Buena condición respiratoria y afección leve en ojos en tratamiento.",
+    history:
+      "Encontrados dentro de una caja de cartón cerca de un terreno baldío. Fueron rescatados por vecinos del sector y actualmente reciben valoración médica y desparasitación.",
+    image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80",
+    tags: [
+      { label: "EN PROCESO", color: "#a855f7" },
+      { label: "ABANDONO", color: "#6366f1" },
+    ],
+  },
+];
+
+const PETS = [
+  {
+    id: "p1",
+    name: "Luna",
+    info: "Labrador • 2 años • Bogotá",
+    image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80",
+    tag: { label: "URGENTE", color: "#ef4444" },
+  },
+  {
+    id: "p2",
+    name: "Milan",
+    info: "Golden • 1 año • Medellín",
+    image: "https://images.unsplash.com/photo-1552053831-71594a27632d?q=80",
+    tag: { label: "NUEVO", color: COLORS.primaryContainer },
+  },
+];
 
 export default function Home() {
+  const router = useRouter();
+
+  const navigation = useNavigation(); //Inicializamos el hook de navegación
+
+  //Creeamos una funcion para un acceso directo al Drawer padre
+  const abrirMenuLateral = () => {
+    router.push("/drawer");
+    };
+
+  // Estados para métricas reales
+  const [adoptadosCount, setAdoptadosCount] = useState(0);
+  const [denunciasCount, setDenunciasCount] = useState(0);
+  const [voluntariosCount, setVoluntariosCount] = useState(0);
+
+  // Estado para el modal de detalle de reporte
+  const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
+
+  // Favoritos
+  const [favoritos, setFavoritos] = useState({});
+  const [busqueda, setBusqueda] = useState("");
+
+  const {openMenu } = useMenu();
+
+  function toggleFavorito(id) {
+    setFavoritos((prev) => ({ 
+      ...prev, [id]: !prev[id] }));
+  }
+
+  function verDetalleReporte(report) {
+    setReporteSeleccionado(report);
+  }
+
+  function irAMascotas(pet) {
+    setAdoptadosCount((prev) => prev + 1);
+    Alert.alert(
+      "¡Gracias!",
+      `Has iniciado el proceso para adoptar a ${pet.name}.`
+    );
+    router.push("/(tabs)/Mascotas");
+  }
+
+  const mascotasFiltradas = PETS.filter((pet) =>
+    pet.name.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.surface} translucent={false} />
 
-      <Image
-  source={require("../../assets/fondo.jpg")}
-  style={styles.imagen}
-/>
+      {/* NAVBAR SUPERIOR CON BOTÓN DE PERFIL */}
+      <View style={styles.navbar}>
+        <View style={styles.brandContainer}>
+          {/* Agregamos un botón hamburguesa agregado al inicio */}
+          <TouchableOpacity   
+            onPress={abrirMenuLateral} 
+            style={{ 
+              marginRight: 12,
+              padding: 4 }}
+            >
+            <Ionicons 
+              name="menu-outline" 
+              size={26} color={COLORS.onSurface} />
+          </TouchableOpacity>
 
-      <View style={styles.overlay}>
-        <Text style={styles.titulo}>
-          LA LUCHA CONTRA EL MALTRATO ANIMAL
-        </Text>
+          <Text style={styles.logoIcon}>🛡️</Text>
+          <Text style={styles.brandTitle}>SELLO GUARDIÁN</Text>
+        </View>
+        <View style={styles.navActions}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() =>
+              Alert.alert("Notificaciones", "No tienes notificaciones nuevas.")
+            }
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={COLORS.onSurface}
+            />
+          </TouchableOpacity>
 
-        <Text style={styles.descripcion}>
-          Anímate a denunciar, adoptar y proteger a quienes no tienen voz.
-        </Text>
-
-        <TouchableOpacity style={styles.boton}>
-          <Text style={styles.textoBoton}>🚨 Denunciar</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() => router.push("/(tabs)/Perfil")}
+          >
+            <Ionicons
+              name="person-circle-outline"
+              size={26}
+              color={COLORS.primary}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitulo}>❤️ Adopta una mascota</Text>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        {/* HERO SECTION */}
+        <ImageBackground
+          source={require("../../assets/fondo.jpg")}
+          style={styles.heroBackground}
+        >
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>
+              La lucha contra el{"\n"}
+              <Text style={styles.heroHighlight}>maltrato animal{"\n"}</Text>
+              nunca termina
+            </Text>
 
-        <Text style={styles.cardTexto}>
-          Encuentra perros y gatos que esperan un nuevo hogar.
-        </Text>
-      </View>
+            <Text style={styles.heroSubtitle}>
+              Anímate a denunciar, adoptar y proteger a los que no tienen voz.
+            </Text>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitulo}>🐾 ¿Qué puedes hacer?</Text>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              activeOpacity={0.85}
+              onPress={() => router.push("/(tabs)/Mascotas")}
+            >
+              <Text style={styles.primaryButtonText}>Adoptar ahora</Text>
+            </TouchableOpacity>
 
-        <Text style={styles.cardTexto}>
-          • Adoptar{"\n"}
-          • Reportar maltrato{"\n"}
-          • Buscar mascotas perdidas
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{adoptadosCount}</Text>
+                <Text style={styles.statLabel}>Adoptados</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{denunciasCount}</Text>
+                <Text style={styles.statLabel}>Denuncias atendidas</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{voluntariosCount}</Text>
+                <Text style={styles.statLabel}>Voluntarios activos</Text>
+              </View>
+            </View>
+          </View>
+        </ImageBackground>
 
-        </Text>
-      </View>
+        {/* SECCIÓN: REPORTES RECIENTES */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionBadge}>VIGILANCIA COMUNITARIA</Text>
+          <Text style={styles.sectionTitle}>Reportes Recientes</Text>
+          <Text style={styles.sectionSubtitle}>
+            Mantente al tanto de las incidencias reportadas en tu comunidad.
+          </Text>
 
-    </ScrollView>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.cardsScroll}
+          >
+            {REPORTS.map((report) => (
+              <View key={report.id} style={styles.card}>
+                <ImageBackground
+                  source={{ uri: report.image }}
+                  style={styles.cardImage}
+                >
+                  <View style={styles.tagGroup}>
+                    {report.tags.map((tag) => (
+                      <View
+                        key={tag.label}
+                        style={[styles.tag, { backgroundColor: tag.color }]}
+                      >
+                        <Text style={styles.tagText}>{tag.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </ImageBackground>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>{report.title}</Text>
+                  <Text style={styles.cardDetail}>📍 {report.location}</Text>
+                  <TouchableOpacity
+                    style={styles.cardButton}
+                    activeOpacity={0.85}
+                    onPress={() => verDetalleReporte(report)}
+                  >
+                    <Text style={styles.cardButtonText}>Ver detalles →</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* SECCIÓN: MASCOTAS EN ADOPCIÓN */}
+        <View style={[styles.sectionContainer, styles.graySection]}>
+          <Text style={styles.sectionBadge}>EN BUSCA DE HOGAR</Text>
+          <Text style={styles.sectionTitle}>Mascotas en adopción</Text>
+          <Text style={styles.sectionSubtitle}>
+            Estos peludos esperan encontrar una familia que los ame.
+          </Text>
+
+          <View style={styles.searchWrap}>
+            <Ionicons
+              name="search"
+              size={16}
+              color={COLORS.onSurfaceVariant}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por nombre..."
+              placeholderTextColor={COLORS.onSurfaceVariant}
+              value={busqueda}
+              onChangeText={setBusqueda}
+            />
+          </View>
+
+          {mascotasFiltradas.length === 0 ? (
+            <Text style={styles.emptyText}>
+              No encontramos mascotas con ese nombre.
+            </Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.cardsScroll}
+            >
+              {mascotasFiltradas.map((pet) => {
+                const esFavorito = !!favoritos[pet.id];
+                return (
+                  <View key={pet.id} style={styles.petCard}>
+                    <ImageBackground
+                      source={{ uri: pet.image }}
+                      style={styles.cardImage}
+                    >
+                      <View style={styles.petCardTopRow}>
+                        <View
+                          style={[
+                            styles.tag,
+                            { backgroundColor: pet.tag.color },
+                          ]}
+                        >
+                          <Text style={styles.tagText}>{pet.tag.label}</Text>
+                        </View>
+
+                        <TouchableOpacity
+                          style={styles.favButton}
+                          activeOpacity={0.8}
+                          onPress={() => toggleFavorito(pet.id)}
+                        >
+                          <Ionicons
+                            name={esFavorito ? "heart" : "heart-outline"}
+                            size={16}
+                            color={esFavorito ? COLORS.error : "#ffffff"}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </ImageBackground>
+                    <View style={styles.cardContent}>
+                      <Text style={styles.petName}>{pet.name}</Text>
+                      <Text style={styles.petInfo}>{pet.info}</Text>
+                      <TouchableOpacity
+                        style={styles.adoptButton}
+                        activeOpacity={0.85}
+                        onPress={() => irAMascotas(pet)}
+                      >
+                        <Text style={styles.adoptButtonText}>
+                          Quiero adoptarl
+                          {pet.name.endsWith("a") ? "a" : "o"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* MODAL DE DETALLES DEL REPORTE */}
+      <Modal
+        visible={!!reporteSeleccionado}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setReporteSeleccionado(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Header Modal */}
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  {reporteSeleccionado?.title}
+                </Text>
+                <Text style={styles.modalHeaderSubtitle}>
+                  Nombre: <Text style={{ color: COLORS.primary, fontWeight: "bold" }}>{reporteSeleccionado?.name}</Text>
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setReporteSeleccionado(null)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={20} color={COLORS.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Bloque Superior: Info Izquierda / Imagen Derecha */}
+            <View style={styles.modalTopRow}>
+              <View style={styles.modalInfoContainer}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Raza:</Text>
+                  <Text style={styles.infoValue}>{reporteSeleccionado?.breed}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Edad:</Text>
+                  <Text style={styles.infoValue}>{reporteSeleccionado?.age}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Sexo:</Text>
+                  <Text style={styles.infoValue}>{reporteSeleccionado?.gender}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Estado:</Text>
+                  <Text style={[styles.infoValue, { color: COLORS.primary }]}>
+                    {reporteSeleccionado?.status}
+                  </Text>
+                </View>
+              </View>
+
+              <Image
+                source={{ uri: reporteSeleccionado?.image }}
+                style={styles.modalImage}
+              />
+            </View>
+
+            {/* Bloque de Salud y Clínica */}
+            <View style={styles.healthContainer}>
+              <View style={styles.healthItem}>
+                <Text style={styles.healthLabel}>💉 Vacunas:</Text>
+                <Text style={styles.healthText}>{reporteSeleccionado?.vaccines}</Text>
+              </View>
+
+              <View style={styles.healthItem}>
+                <Text style={styles.healthLabel}>📋 Historial Médico:</Text>
+                <Text style={styles.healthText}>{reporteSeleccionado?.medicalHistory}</Text>
+              </View>
+            </View>
+
+            {/* Bloque Inferior: Historia / Rescate */}
+            <View style={styles.historyContainer}>
+              <Text style={styles.historyLabel}>Antecedentes / Rescate:</Text>
+              <Text style={styles.historyText}>
+                {reporteSeleccionado?.history}
+              </Text>
+            </View>
+
+            {/* Botón Acción Cierre */}
+            <TouchableOpacity
+              style={styles.modalActionButton}
+              activeOpacity={0.85}
+              onPress={() => setReporteSeleccionado(null)}
+            >
+              <Text style={styles.modalActionButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#141824",
+    backgroundColor: COLORS.surface,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
-
-  imagen: {
-    width: "100%",
-    height: 300,
-  },
-
-  overlay: {
-    padding: 20,
-  },
-
-  titulo: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-
-  descripcion: {
-    color: "#ddd",
-    fontSize: 16,
-    marginBottom: 20,
-  },
-
-  boton: {
-    backgroundColor: "#0D6EFD",
-    padding: 15,
-    borderRadius: 12,
+  navbar: {
+    flexDirection: "row",
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    justifyContent: "space-between",
     alignItems: "center",
   },
-
-  textoBoton: {
-    color: "#fff",
+  brandContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoIcon: {
+    fontSize: 20,
+    marginRight: 6,
+  },
+  brandTitle: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  navActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  navButton: {
+    padding: 4,
+  },
+  heroBackground: {
+    width: "100%",
+    
+  },
+  heroOverlay: {
+    backgroundColor: "rgba(15, 13, 21, 0.85)",
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 28,
+  },
+  heroTitle: {
+    color: COLORS.onSurface,
+    fontSize: 26,
+    fontWeight: "bold",
+    lineHeight: 32,
+  },
+  heroHighlight: {
+    color: COLORS.primary,
+  },
+  heroSubtitle: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 14,
+    marginVertical: 14,
+    lineHeight: 20,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+    marginBottom: 25,
+  },
+  primaryButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.15)",
+    paddingTop: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  statNumber: {
+    color: COLORS.primary,
     fontSize: 18,
     fontWeight: "bold",
   },
-
-  card: {
-    backgroundColor: "#1D2433",
-    margin: 15,
-    padding: 18,
-    borderRadius: 15,
+  statLabel: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10,
   },
-
-  cardTitulo: {
-    color: "#fff",
-    fontSize: 20,
+  sectionContainer: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.surface,
+  },
+  graySection: {
+    backgroundColor: COLORS.surfaceContainer,
+  },
+  sectionBadge: {
+    color: COLORS.primary,
+    fontSize: 11,
     fontWeight: "bold",
-    marginBottom: 10,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: 16,
+    marginTop: 2,
+  },
+  cardsScroll: {
+    flexDirection: "row",
+    paddingBottom: 10,
+  },
+  searchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(15, 13, 21, 0.6)",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 44,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.onSurface,
+    fontSize: 14,
+  },
+  emptyText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+    fontStyle: "italic",
+  },
+  card: {
+    width: Math.min(260, SCREEN_WIDTH * 0.72),
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 16,
+    marginRight: 16,
+    overflow: "hidden",
+  },
+  cardImage: {
+    height: 130,
+    width: "100%",
+  },
+  tagGroup: {
+    flexDirection: "row",
+    padding: 8,
+  },
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginRight: 6,
+    alignSelf: "flex-start",
+    marginTop: 8,
+    marginLeft: 8,
+  },
+  tagText: {
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "bold",
+  },
+  cardContent: {
+    padding: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+    marginBottom: 4,
+  },
+  cardDetail: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: 12,
+  },
+  cardButton: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  cardButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 12,
+  },
+  petCard: {
+    width: Math.min(210, SCREEN_WIDTH * 0.58),
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    marginRight: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  petCardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    padding: 8,
+  },
+  favButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+    marginRight: 4,
+  },
+  petName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+  },
+  petInfo: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    marginVertical: 4,
+  },
+  adoptButton: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  adoptButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 12,
   },
 
-  cardTexto: {
-    color: "#ddd",
-    fontSize: 16,
-    lineHeight: 24,
+  /* ESTILOS DEL MODAL DE DETALLES */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  modalContainer: {
+    width: "100%",
+    backgroundColor: COLORS.surfaceContainerHigh,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: 18,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+    paddingBottom: 8,
+  },
+  modalHeaderTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+  },
+  modalHeaderSubtitle: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 12,
+  },
+  modalTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  modalInfoContainer: {
+    flex: 1,
+    gap: 5,
+  },
+  infoRow: {
+    flexDirection: "column",
+  },
+  infoLabel: {
+    fontSize: 10,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: "bold",
+  },
+  infoValue: {
+    fontSize: 12,
+    color: COLORS.onSurface,
+    fontWeight: "500",
+  },
+  modalImage: {
+    width: 105,
+    height: 115,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primaryContainer,
+  },
+  healthContainer: {
+    marginTop: 10,
+    gap: 6,
+    backgroundColor: "rgba(0,0,0,0.2)",
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  healthItem: {
+    flexDirection: "column",
+  },
+  healthLabel: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: COLORS.onSurfaceVariant,
+  },
+  healthText: {
+    fontSize: 11,
+    color: COLORS.onSurface,
+    marginTop: 1,
+  },
+  historyContainer: {
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  historyLabel: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  historyText: {
+    fontSize: 11,
+    color: COLORS.onSurface,
+    lineHeight: 16,
+  },
+  modalActionButton: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalActionButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 13,
   },
 });

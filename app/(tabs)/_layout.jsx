@@ -1,13 +1,24 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
+const COLORS = {
+  surface: "#111414",
+  primary: "#6167de",
+  onSurfaceVariant: "#bccabc",
+};
+
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#0D6EFD",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.onSurfaceVariant,
+        tabBarStyle: {
+          backgroundColor: COLORS.surface,
+          borderTopColor: "rgba(255,255,255,0.1)",
+          borderTopWidth: 1,
+        },
       }}
     >
       <Tabs.Screen
@@ -31,24 +42,32 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="Perfil"
+        name="Reportes"
         options={{
-          title: "Perfil",
+          title: "Reportes",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="paw-outline" size={size} color={color} />
           ),
         }}
       />
 
+      {/* Forzarmos a Expo a ocultar el perfil de la barra */}
       <Tabs.Screen
-        name="Ajustes"
+        name="Perfil"
         options={{
-          title: "Ajustes",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
+          href: null, // Esto rompe el enlace automático y lo borra visualmente
         }}
       />
+
+      <Tabs.Screen
+  name="Denuncias"
+  options={{
+    title: "Denuncias",
+    tabBarIcon: ({ color, size }) => (
+      <Ionicons name="megaphone-outline" size={size} color={color} />
+    ),
+  }}
+/>
     </Tabs>
   );
 }
