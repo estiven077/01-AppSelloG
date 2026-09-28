@@ -34,7 +34,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Mascotas"
         options={{
-          title: "Mascotas",
+          title: "Adoptar",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="paw-outline" size={size} color={color} />
           ),
@@ -44,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Reportes"
         options={{
-          title: "Reportes",
+          title: "Reportar",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="paw-outline" size={size} color={color} />
           ),
@@ -60,14 +60,18 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-  name="Denuncias"
-  options={{
-    title: "Denuncias",
-    tabBarIcon: ({ color, size }) => (
-      <Ionicons name="megaphone-outline" size={size} color={color} />
-    ),
-  }}
-/>
+        name="Favoritos"
+        options={{
+          title: "Favoritos",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "star" : "star-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

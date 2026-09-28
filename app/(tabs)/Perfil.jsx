@@ -1,86 +1,108 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  ImageBackground,
-  Image,
-  TextInput,
   TouchableOpacity,
   ScrollView,
+  Image,
+  TextInput,
+  Modal,
+  SafeAreaView,
+  StatusBar,
+  Platform,
+  Dimensions,
+  StyleSheet,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+  Feather,
+} from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
+import { UserContext } from "../../context/UserContext";
 
-export default function Perfil() {
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
+const COLORS = {
+  surface: "#17121F",
+  surfaceContainer: "#1F192B",
+  surfaceContainerHigh: "#282038",
+  cardBg: "#21182D",
+  cardBorder: "#34253F",
+  primary: "#A78BFA",
+  primaryContainer: "#6D4CC7",
+  onPrimaryContainer: "#FFFFFF",
+  onSurface: "#FFFFFF",
+  onSurfaceVariant: "#9E97A7",
+  danger: "#FF6B6B",
+};
+
+export default function Perfil({ navigation }) {
+  const { userData, updateUser } = useContext(UserContext);
+
+  // Estados de navegación y modales
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState("publicaciones");
+  const [modalNotificaciones, setModalNotificaciones] = useState(false);
 
-  // Imagen de perfil
-  const [fotoPerfil, setFotoPerfil] = useState(null);
+  // Datos del usuario (vienen de UserContext, sin API)
+  const [nombre, setNombre] = useState(userData.nombre ?? "");
+  const [email, setEmail] = useState(userData.correo ?? "");
+  const [ubicacion, setUbicacion] = useState(userData.ciudad ?? "");
+  const [descripcion, setDescripcion] = useState(userData.descripcion ?? "");
+  const [fotoPerfil, setFotoPerfil] = useState(userData.fotoPerfil ?? null);
 
-  // Informacion personal
-  const [tipoDocumento, setTipoDocumento] = useState("");
-  const [documento, setDocumento] = useState("");
-  const [fecha, setFecha] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [ocupacion, setOcupacion] = useState("");
+  // Respaldo para restaurar si se cancela la edición
+  const [tempProfile, setTempProfile] = useState({});
 
-  // Informacion de ubicacion
-  const [ciudad, setCiudad] = useState("");
+  // Listas locales (sin API por ahora)
+  const [publicaciones, setPublicaciones] = useState([
+    {
+      id: 1,
+      titulo: "Rescate de cachorro en la vía Panamericana",
+      fecha: "12/09/2026",
+      ubicacion: "Popayán, Cauca",
+    },
+    {
+      id: 2,
+      titulo: "Gatita en adopción, busca hogar",
+      fecha: "05/09/2026",
+      ubicacion: "Casa hogar, Popayán",
+    },
+  ]);
+  const [favoritos, setFavoritos] = useState([]);
+  const [adopciones, setAdopciones] = useState([]);
 
-  // Descripcion del perfil
-  const [descripcion, setDescripcion] = useState("");
-
-  // Seleccionar foto
-  const seleccionarImagen = async () => {
-
-    const { status } =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+  // --- FOTO DE PERFIL ---
+  const handleSeleccionarFoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
         "Permiso denegado",
-        "Necesitamos acceso a tus fotos para cambiar la imagen de perfil."
+        "Se necesitan permisos para acceder a la galería."
       );
       return;
     }
 
-    const result =
-      await ImagePicker.launchImageLibraryAsync({
-
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-
-        allowsEditing: true,
-
-        aspect: [1, 1],
-
-        quality: 0.7,
-      });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
 
     if (!result.canceled) {
-
       setFotoPerfil(result.assets[0].uri);
-
     }
   };
 
-  // Eliminar foto
-  const eliminarFoto = () => {
-
+  const handleEliminarFoto = () => {
     Alert.alert(
       "Eliminar foto",
-      "¿Estás seguro de que deseas eliminar tu foto de perfil?",
-
+      "¿Estás seguro de que quieres quitar tu foto de perfil?",
       [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Eliminar",
           style: "destructive",
@@ -90,738 +112,876 @@ export default function Perfil() {
     );
   };
 
-  // Guardar perfil
-  const guardarPerfil = () => {
+  // --- EDICIÓN DE PERFIL ---
+  const handleIniciarEdicion = () => {
+    setTempProfile({ nombre, email, ubicacion, descripcion });
+    setIsEditing(true);
+  };
+
+  const handleCancelarEdicion = () => {
+    setNombre(tempProfile.nombre);
+    setEmail(tempProfile.email);
+    setUbicacion(tempProfile.ubicacion);
+    setDescripcion(tempProfile.descripcion);
+    setIsEditing(false);
+  };
+
+  const handleGuardarPerfil = () => {
+    if (!nombre.trim() || !email.trim()) {
+      Alert.alert("Campo requerido", "El nombre y el correo no pueden estar vacíos.");
+      return;
+    }
+
+    updateUser({
+      nombre,
+      correo: email,
+      ciudad: ubicacion,
+      descripcion,
+      fotoPerfil,
+    });
 
     setIsEditing(false);
+    Alert.alert("¡Éxito!", "Perfil actualizado correctamente.");
+  };
 
+  // --- PUBLICACIONES ---
+  const handleEliminarPublicacion = (id) => {
     Alert.alert(
-      "Perfil actualizado",
-      "Tu información ha sido guardada correctamente."
+      "Eliminar publicación",
+      "¿Deseas eliminar este reporte?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            setPublicaciones((prev) => prev.filter((item) => item.id !== id));
+            Alert.alert("Eliminado", "La publicación fue eliminada.");
+          },
+        },
+      ]
     );
   };
 
+  // --- CERRAR SESIÓN ---
+  const handleCerrarSesion = () => {
+    Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas salir?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Salir",
+        style: "destructive",
+        onPress: () => {
+          if (navigation) navigation.replace("Login");
+        },
+      },
+    ]);
+  };
+
   return (
-    <ImageBackground
-      source={require("../../assets/fondo.jpg")}
-      style={styles.background}
-      resizeMode="cover"
-    >
-
-      <View style={styles.overlay}>
-
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-        >
-
-          <View style={styles.card}>
-
-            {/* Encabezado */}
-
-            <View style={styles.encabezado}>
-
-              <View style={styles.tituloContainer}>
-
-                <Text style={styles.titulo}>
-                  {isEditing
-                    ? "Completa tu perfil"
-                    : "Mi Perfil"}
-                </Text>
-
-              </View>
-
-              {!isEditing && (
-
-                <TouchableOpacity
-                  style={styles.botonEditarSuperior}
-                  onPress={() => setIsEditing(true)}
-                >
-
-                  <Ionicons
-                    name="create-outline"
-                    size={23}
-                    color="#33CC66"
-                  />
-
-                </TouchableOpacity>
-
-              )}
-
-            </View>
-
-            {/* Subtitulo */}
-
-            <Text style={styles.subtitulo}>
-
-              {isEditing
-                ? "Actualiza tu información personal para mantener tu perfil completo."
-                : "Aquí puedes consultar y mantener actualizada tu información personal."}
-
-            </Text>
-
-
-            
-
-
-            {/* Foto */}
-
-            <View style={styles.fotoContainer}>
-
-              <View style={styles.fotoWrapper}>
-
-                <Image
-                  source={
-                    fotoPerfil
-                      ? { uri: fotoPerfil }
-                      : require("../../assets/user.png")
-                  }
-                  style={styles.foto}
-                />
-
-
-                {isEditing && (
-
-                  <TouchableOpacity
-                    style={styles.botonFoto}
-                    onPress={seleccionarImagen}
-                  >
-
-                    <Ionicons
-                      name="add"
-                      size={22}
-                      color="#fff"
-                    />
-
-                  </TouchableOpacity>
-
-                )}
-
-
-                {isEditing && fotoPerfil && (
-
-                  <TouchableOpacity
-                    style={styles.botonEliminarFoto}
-                    onPress={eliminarFoto}
-                  >
-
-                    <Ionicons
-                      name="trash-outline"
-                      size={18}
-                      color="#fff"
-                    />
-
-                  </TouchableOpacity>
-
-                )}
-
-              </View>
-
-
-              {isEditing && (
-
-                <Text style={styles.ayudaFoto}>
-
-                  Toca el botón + para cambiar tu foto
-
-                </Text>
-
-              )}
-
-            </View>
-
-
-            {/* Informacion personal */}
-
-            <Text style={styles.seccion}>
-              Información personal
-            </Text>
-
-
-            {/* Tipo de documento */}
-
-            <View style={styles.campoCompleto}>
-
-              <Text style={styles.label}>
-                Tipo de documento
-              </Text>
-
-              <View
-                style={[
-                  styles.pickerContainer,
-                  !isEditing && styles.inputBloqueado,
-                ]}
-              >
-
-                <Picker
-                  selectedValue={tipoDocumento}
-                  onValueChange={(itemValue) =>
-                    setTipoDocumento(itemValue)
-                  }
-                  enabled={isEditing}
-                  style={styles.picker}
-                  itemStyle={styles.pickerItem}
-                >
-
-                  <Picker.Item
-                    label="Selecciona un tipo de documento"
-                    value=""
-                  />
-
-                  <Picker.Item
-                    label="Cédula de ciudadanía"
-                    value="cedula_ciudadania"
-                  />
-
-                  <Picker.Item
-                    label="Cédula de extranjería"
-                    value="cedula_extranjeria"
-                  />
-
-                  <Picker.Item
-                    label="PEP"
-                    value="pep"
-                  />
-
-                  <Picker.Item
-                    label="Permiso por Protección Temporal"
-                    value="ppt"
-                  />
-
-                </Picker>
-
-              </View>
-
-            </View>
-
-
-            {/* Numero de documento */}
-
-            <View style={styles.campoCompleto}>
-
-              <Text style={styles.label}>
-                Número de documento
-              </Text>
-
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputBloqueado,
-                ]}
-                placeholder="Escribe tu número de documento"
-                placeholderTextColor="rgba(0,0,0,0.38)"
-                value={documento}
-                onChangeText={setDocumento}
-                editable={isEditing}
-                keyboardType="numeric"
-              />
-
-            </View>
-
-
-            {/* Fecha de nacimiento */}
-
-            <View style={styles.campoCompleto}>
-
-              <Text style={styles.label}>
-                Fecha de nacimiento
-              </Text>
-
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputBloqueado,
-                ]}
-                placeholder="dd/mm/aaaa"
-                placeholderTextColor="rgba(0,0,0,0.38)"
-                value={fecha}
-                onChangeText={setFecha}
-                editable={isEditing}
-              />
-
-            </View>
-
-
-            {/* Telefono y Ocupacion */}
-
-            <View style={styles.row}>
-
-              <View style={styles.campo}>
-
-                <Text style={styles.label}>
-                  Teléfono
-                </Text>
-
-                <TextInput
-                  style={[
-                    styles.input,
-                    !isEditing && styles.inputBloqueado,
-                  ]}
-                  placeholder="+57 3000000000"
-                  placeholderTextColor="rgba(0,0,0,0.38)"
-                  value={telefono}
-                  onChangeText={setTelefono}
-                  editable={isEditing}
-                  keyboardType="phone-pad"
-                />
-
-              </View>
-
-
-              <View style={styles.campo}>
-
-                <Text style={styles.label}>
-                  Ocupación
-                </Text>
-
-                <TextInput
-                  style={[
-                    styles.input,
-                    !isEditing && styles.inputBloqueado,
-                  ]}
-                  placeholder="Ej. Diseñador"
-                  placeholderTextColor="rgba(0,0,0,0.38)"
-                  value={ocupacion}
-                  onChangeText={setOcupacion}
-                  editable={isEditing}
-                />
-
-              </View>
-
-            </View>
-
-
-            {/* Correo electronico */}
-
-            <View style={styles.campoCompleto}>
-
-              <Text style={styles.label}>
-                Correo electrónico
-              </Text>
-
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputBloqueado,
-                ]}
-                placeholder="ejemplo@correo.com"
-                placeholderTextColor="rgba(0,0,0,0.38)"
-                value={correo}
-                onChangeText={setCorreo}
-                editable={isEditing}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-
-            </View>
-
-
-            {/* Informacion de ubicacion */}
-
-            <Text style={styles.seccion}>
-              Información de ubicación
-            </Text>
-
-
-            {/* Ciudad */}
-
-            <View style={styles.campoCompleto}>
-
-              <Text style={styles.label}>
-                Ciudad o municipio
-              </Text>
-
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputBloqueado,
-                ]}
-                placeholder="Ej. Popayán"
-                placeholderTextColor="rgba(0,0,0,0.38)"
-                value={ciudad}
-                onChangeText={setCiudad}
-                editable={isEditing}
-              />
-
-            </View>
-
-
-            {/* Informacion adicional */}
-
-            <Text style={styles.seccion}>
-              Información adicional
-            </Text>
-
-
-            <View style={styles.infoExtra}>
-
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={23}
-                color="#33CC66"
-              />
-
-              <Text style={styles.textoInfoExtra}>
-
-                Mantén actualizados tus datos para facilitar
-                la comunicación y mejorar la seguridad de tu cuenta.
-
-              </Text>
-
-            </View>
-
-
-            {/* Botones */}
-
-            {isEditing ? (
-
-              <>
-
-                <TouchableOpacity
-                  style={styles.botonPrincipal}
-                  onPress={guardarPerfil}
-                >
-
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={21}
-                    color="#fff"
-                  />
-
-                  <Text style={styles.textoBoton}>
-                    Guardar perfil
-                  </Text>
-
-                </TouchableOpacity>
-
-
-                <TouchableOpacity
-                  style={styles.botonCancelar}
-                  onPress={() => setIsEditing(false)}
-                >
-
-                  <Text style={styles.textoCancelar}>
-                    Cancelar
-                  </Text>
-
-                </TouchableOpacity>
-
-              </>
-
-            ) : (
-
-              <TouchableOpacity
-                style={[
-                  styles.botonPrincipal,
-                  styles.botonEditar,
-                ]}
-                onPress={() => setIsEditing(true)}
-              >
-
-                <Ionicons
-                  name="create-outline"
-                  size={21}
-                  color="#fff"
-                />
-
-                <Text style={styles.textoBoton}>
-                  Editar perfil
-                </Text>
-
-              </TouchableOpacity>
-
-            )}
-
-          </View>
-
-        </ScrollView>
-
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.surfaceContainer} />
+
+      {/* NAVBAR */}
+      <View style={styles.navbar}>
+        <View style={styles.brandContainer}>
+          <Text style={styles.brandTitle}>Mi Perfil</Text>
+        </View>
+
+        <View style={styles.navActions}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() => setModalNotificaciones(true)}
+          >
+            <Ionicons name="notifications-outline" size={22} color={COLORS.onSurface} />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={handleCerrarSesion}
+          >
+            <Feather name="log-out" size={20} color={COLORS.danger} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-    </ImageBackground>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {isEditing ? (
+
+          /* MODO DE EDICIÓN */
+          <View style={styles.editContainer}>
+            <View style={styles.photoSection}>
+              <View style={styles.photoContainer}>
+                {fotoPerfil ? (
+                  <Image source={{ uri: fotoPerfil }} style={styles.profilePhoto} />
+                ) : (
+                  <View style={styles.defaultPhoto}>
+                    <Ionicons name="person" size={50} color={COLORS.primary} />
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.cameraButton}
+                  onPress={handleSeleccionarFoto}
+                >
+                  <Ionicons name="camera" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.photoButtons}>
+                <TouchableOpacity
+                  style={styles.changePhotoButton}
+                  onPress={handleSeleccionarFoto}
+                >
+                  <Feather name="upload" size={14} color="#FFFFFF" />
+                  <Text style={styles.photoButtonText}>Cambiar foto</Text>
+                </TouchableOpacity>
+
+                {fotoPerfil && (
+                  <TouchableOpacity
+                    style={styles.deletePhotoButton}
+                    onPress={handleEliminarFoto}
+                  >
+                    <Feather name="trash-2" size={14} color={COLORS.danger} />
+                    <Text style={styles.deletePhotoText}>Eliminar</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* FORMULARIO DE EDICIÓN */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nombre completo</Text>
+              <View style={styles.searchWrap}>
+                <Feather name="user" size={16} color={COLORS.primary} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={nombre}
+                  onChangeText={setNombre}
+                  placeholderTextColor={COLORS.onSurfaceVariant}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Correo electrónico</Text>
+              <View style={styles.searchWrap}>
+                <Feather name="mail" size={16} color={COLORS.primary} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={COLORS.onSurfaceVariant}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Ubicación</Text>
+              <View style={styles.searchWrap}>
+                <Feather name="map-pin" size={16} color={COLORS.primary} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={ubicacion}
+                  onChangeText={setUbicacion}
+                  placeholderTextColor={COLORS.onSurfaceVariant}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Biografía / Descripción</Text>
+              <View style={[styles.searchWrap, styles.textAreaWrap]}>
+                <TextInput
+                  style={[styles.searchInput, styles.textArea]}
+                  value={descripcion}
+                  onChangeText={setDescripcion}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  placeholderTextColor={COLORS.onSurfaceVariant}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={handleGuardarPerfil}>
+              <Text style={styles.primaryButtonText}>Guardar Cambios</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelarEdicion}
+            >
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+
+          /* VISTA PERFIL DETALLADO */
+          <>
+            <View style={styles.profileSection}>
+              <View style={styles.profilePhotoWrapper}>
+                {fotoPerfil ? (
+                  <Image source={{ uri: fotoPerfil }} style={styles.mainProfilePhoto} />
+                ) : (
+                  <View style={styles.mainDefaultPhoto}>
+                    <Ionicons name="person" size={48} color={COLORS.primary} />
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.heroTitle}>{nombre}</Text>
+              <Text style={styles.heroSubtitle}>{email}</Text>
+
+              <View style={styles.locationRow}>
+                <Ionicons name="location-sharp" size={14} color={COLORS.primary} />
+                <Text style={styles.locationText}>{ubicacion}</Text>
+              </View>
+
+              <Text style={styles.profileDescription}>{descripcion}</Text>
+
+              <TouchableOpacity
+                style={styles.editProfileButton}
+                onPress={handleIniciarEdicion}
+              >
+                <Feather name="edit-3" size={15} color="#FFFFFF" />
+                <Text style={styles.editProfileText}>Editar Perfil</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* BARRA DE ESTADÍSTICAS */}
+            <View style={styles.statsRowContainer}>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{publicaciones.length}</Text>
+                  <Text style={styles.statLabel}>REPORTES</Text>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{adopciones.length}</Text>
+                  <Text style={styles.statLabel}>ADOPCIONES</Text>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{favoritos.length}</Text>
+                  <Text style={styles.statLabel}>FAVORITOS</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* TAB BAR DE NAVEGACIÓN */}
+            <View style={styles.tabsContainer}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "publicaciones" && styles.activeTab]}
+                onPress={() => setActiveTab("publicaciones")}
+              >
+                <Ionicons
+                  name="grid-outline"
+                  size={16}
+                  color={activeTab === "publicaciones" ? COLORS.primary : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "publicaciones" && styles.activeTabText,
+                  ]}
+                >
+                  Publicaciones
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "favoritos" && styles.activeTab]}
+                onPress={() => setActiveTab("favoritos")}
+              >
+                <Ionicons
+                  name={activeTab === "favoritos" ? "heart" : "heart-outline"}
+                  size={16}
+                  color={activeTab === "favoritos" ? COLORS.primary : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "favoritos" && styles.activeTabText,
+                  ]}
+                >
+                  Favoritos
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "adopciones" && styles.activeTab]}
+                onPress={() => setActiveTab("adopciones")}
+              >
+                <MaterialCommunityIcons
+                  name="paw-outline"
+                  size={16}
+                  color={activeTab === "adopciones" ? COLORS.primary : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "adopciones" && styles.activeTabText,
+                  ]}
+                >
+                  Adopciones
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* RENDERIZADO DINÁMICO DE LOS TABS */}
+            <View style={styles.sectionContainer}>
+              {activeTab === "publicaciones" &&
+                (publicaciones.length > 0 ? (
+                  publicaciones.map((pub) => (
+                    <View style={styles.card} key={pub.id}>
+                      <View style={styles.cardContent}>
+                        <View style={styles.cardHeaderRow}>
+                          <View style={styles.itemIcon}>
+                            <Ionicons name="alert-circle" size={22} color={COLORS.primary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.cardTitle}>{pub.titulo}</Text>
+                            <Text style={styles.cardDetail}>{pub.fecha}</Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleEliminarPublicacion(pub.id)}
+                            style={{ padding: 4 }}
+                          >
+                            <Feather name="trash-2" size={16} color={COLORS.danger} />
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.itemLocation}>{pub.ubicacion}</Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="documents-outline" size={38} color={COLORS.cardBorder} />
+                    <Text style={styles.sectionTitle}>Sin publicaciones</Text>
+                    <Text style={styles.emptyText}>No has realizado ningún reporte aún.</Text>
+                  </View>
+                ))}
+
+              {activeTab === "favoritos" &&
+                (favoritos.length > 0 ? (
+                  favoritos.map((pet) => (
+                    <View style={styles.card} key={pet.id}>
+                      <Text style={styles.cardTitle}>{pet.nombre}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="heart-outline" size={38} color={COLORS.cardBorder} />
+                    <Text style={styles.sectionTitle}>Sin favoritos</Text>
+                    <Text style={styles.emptyText}>
+                      Aquí verás las mascotas o publicaciones que te han gustado.
+                    </Text>
+                  </View>
+                ))}
+
+              {activeTab === "adopciones" && (
+                <View style={styles.emptyContainer}>
+                  <MaterialCommunityIcons name="paw-off-outline" size={38} color={COLORS.cardBorder} />
+                  <Text style={styles.sectionTitle}>Sin adopciones</Text>
+                  <Text style={styles.emptyText}>
+                    No tienes solicitudes de adopción en curso.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      {/* MODAL NOTIFICACIONES */}
+      <Modal
+        visible={modalNotificaciones}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalNotificaciones(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalNotificaciones(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalHeaderTitle}>Notificaciones</Text>
+                <Text style={styles.modalHeaderSubtitle}>Alertas e interacciones</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalNotificaciones(false)}
+              >
+                <Ionicons name="close" size={20} color={COLORS.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.notificationItem}>
+              <View style={styles.notificationIcon}>
+                <Ionicons name="heart" size={18} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoValue}>Nueva respuesta</Text>
+                <Text style={styles.cardDetail}>Comentaron en tu publicación de rescate.</Text>
+                <Text style={styles.statLabel}>Hace 10 min</Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
-
-// Estilos
-
+/* ============ ESTILOS ============ */
 const styles = StyleSheet.create({
-
-  background: {
-    flex: 1,
-  },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-
   container: {
-    flexGrow: 1,
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
+  navbar: {
+    flexDirection: "row",
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 15,
   },
-
-  card: {
-    width: "95%",
-    maxWidth: 430,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 20,
-    padding: 18,
-  },
-
-
-  /* Encabezado */
-
-  encabezado: {
+  brandContainer: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 55,
-    marginBottom: 5,
-    paddingHorizontal: 45,
   },
-
-  tituloContainer: {
-    flex: 1,
+  brandTitle: {
+    color: COLORS.primary,
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
-
-  titulo: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#33CC66",
-    textAlign: "center",
-  },
-
-  botonEditarSuperior: {
-    position: "absolute",
-    right: 0,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-
-  /* Subtitulo */
-
-  subtitulo: {
-    marginTop: 10,
-    marginBottom: 20,
-    color: "#fff",
-    textAlign: "center",
-    lineHeight: 22,
-    paddingHorizontal: 8,
-  },
-
-
-  /* Aviso */
-
-  avisoEditar: {
+  navActions: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 12,
-    padding: 13,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "rgba(51,204,102,0.3)",
+    gap: 12,
   },
-
-  textoAviso: {
-    flex: 1,
-    color: "#fff",
-    fontSize: 13,
-    marginLeft: 9,
-    lineHeight: 19,
-  },
-
-
-  /* Foto */
-
-  fotoContainer: {
-    alignItems: "center",
-    marginBottom: 28,
-  },
-
-  fotoWrapper: {
+  navButton: {
+    padding: 4,
     position: "relative",
   },
-
-  foto: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: "#fff",
-  },
-
-  botonFoto: {
+  notificationDot: {
     position: "absolute",
-    right: -2,
-    bottom: 3,
-    backgroundColor: "#33CC66",
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: "center",
+    top: 4,
+    right: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: COLORS.danger,
+  },
+  scrollContent: {
+    paddingBottom: 30,
+  },
+
+  // PERFIL
+  profileSection: {
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
+    backgroundColor: COLORS.surface,
   },
-
-  botonEliminarFoto: {
-    position: "absolute",
-    left: -2,
-    bottom: 3,
-    backgroundColor: "#e74c3c",
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: "center",
+  profilePhotoWrapper: {
+    marginBottom: 12,
+  },
+  mainProfilePhoto: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  mainDefaultPhoto: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.surfaceContainer,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
+    justifyContent: "center",
   },
-
-  ayudaFoto: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 12,
-    marginTop: 10,
-  },
-
-
-  /* Secciones */
-
-  seccion: {
-    color: "#33CC66",
-    fontSize: 19,
+  heroTitle: {
+    color: COLORS.onSurface,
+    fontSize: 22,
     fontWeight: "bold",
-    marginTop: 12,
+  },
+  heroSubtitle: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  locationText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  profileDescription: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  editProfileButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+  },
+  editProfileText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 13,
+    marginLeft: 6,
+  },
+
+  // ESTADÍSTICAS
+  statsRowContainer: {
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
-
-
-  /* Campos */
-
-  campoCompleto: {
-    width: "100%",
-    marginBottom: 18,
-  },
-
-  row: {
+  statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 0,
-  },
-
-  campo: {
-    width: "48%",
-    marginBottom: 18,
-  },
-
-  label: {
-    color: "#fff",
-    fontWeight: "600",
-    marginBottom: 7,
-    fontSize: 14,
-  },
-
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 11,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: "#222",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.8)",
-  },
-
-  inputBloqueado: {
-    backgroundColor: "rgba(255,255,255,0.55)",
-  },
-
-
-  /* Selector */
-
-  pickerContainer: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 11,
-    overflow: "hidden",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.8)",
-  },
-
-  picker: {
-    width: "100%",
-    height: 50,
-    color: "#222",
-  },
-
-  pickerItem: {
-    fontSize: 14,
-  },
-
-
-  /* Informacion adicional */
-
-  infoExtra: {
-    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 5,
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 14,
+    paddingVertical: 14,
   },
-
-  textoInfoExtra: {
+  statItem: {
     flex: 1,
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 13,
-    lineHeight: 19,
-    marginLeft: 10,
+    alignItems: "center",
+  },
+  statNumber: {
+    color: COLORS.primary,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  statLabel: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: COLORS.cardBorder,
   },
 
-
-  /* Botones */
-
-  botonPrincipal: {
-    backgroundColor: "#33CC66",
-    height: 52,
-    borderRadius: 12,
+  // TABS
+  tabsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+    backgroundColor: COLORS.surface,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 25,
-    flexDirection: "row",
-    gap: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+    gap: 6,
   },
-
-  botonEditar: {
-    marginTop: 25,
+  activeTab: {
+    borderBottomColor: COLORS.primary,
   },
-
-  textoBoton: {
-    color: "#fff",
-    fontSize: 16,
+  tabText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+  },
+  activeTabText: {
+    color: COLORS.primary,
     fontWeight: "bold",
   },
 
-  botonCancelar: {
+  // SECCIONES / CARDS
+  sectionContainer: {
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.surface,
+  },
+  card: {
+    width: "100%",
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  cardContent: {
+    padding: 14,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 15,
-    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  itemIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: COLORS.surfaceContainer,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+  },
+  cardDetail: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+  },
+  itemLocation: {
+    fontSize: 12,
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: 35,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  emptyText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+    textAlign: "center",
+    fontStyle: "italic",
   },
 
-  textoCancelar: {
-    color: "#fff",
+  // FORMULARIO DE EDICIÓN
+  editContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
+  },
+  photoSection: {
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  photoContainer: {
+    position: "relative",
+  },
+  profilePhoto: {
+    width: 95,
+    height: 95,
+    borderRadius: 47.5,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  defaultPhoto: {
+    width: 95,
+    height: 95,
+    borderRadius: 47.5,
+    backgroundColor: COLORS.surfaceContainer,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraButton: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primaryContainer,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  photoButtons: {
+    flexDirection: "row",
+    marginTop: 12,
+    gap: 10,
+  },
+  changePhotoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primaryContainer,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  photoButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontSize: 12,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  deletePhotoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  deletePhotoText: {
+    color: COLORS.danger,
+    fontSize: 12,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  searchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(15, 13, 21, 0.6)",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.onSurface,
     fontSize: 14,
   },
+  textAreaWrap: {
+    height: "auto",
+    paddingVertical: 10,
+    alignItems: "flex-start",
+  },
+  textArea: {
+    minHeight: 70,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  primaryButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  cancelButton: {
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+  },
 
+  // MODALES
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  modalContainer: {
+    width: "100%",
+    backgroundColor: COLORS.surfaceContainerHigh,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    padding: 18,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+    paddingBottom: 8,
+  },
+  modalHeaderTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: COLORS.onSurface,
+  },
+  modalHeaderSubtitle: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 12,
+  },
+  notificationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  notificationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.surfaceContainer,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  infoValue: {
+    fontSize: 13,
+    color: COLORS.onSurface,
+    fontWeight: "bold",
+  },
 });

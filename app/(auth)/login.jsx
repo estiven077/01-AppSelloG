@@ -17,151 +17,89 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 
-
+// ======================================================
+// PALETA DE COLORES: SELLO GUARDIÁN
+// ======================================================
 
 const COLORS = {
-  primary: '#61de8a',
-  primaryContainer: '#27ae60',
-  onPrimaryContainer: '#00391a',
+  primary: '#7C3AED',
+  primaryContainer: '#7C3AED',
+  onPrimaryContainer: '#FFFFFF',
+  accent: '#C4B5FD',
 
-  surface: '#111414',
-  onSurface: '#e1e3e2',
-  onSurfaceVariant: '#bccabc',
+  surface: '#0F172A',
+  onSurface: '#F8FAFC',
+  onSurfaceVariant: '#94A3B8',
 
-  cardBg: 'rgba(255, 255, 255, 0.06)',
-  cardBorder: 'rgba(255, 255, 255, 0.14)',
+  cardBg: 'rgba(15, 23, 42, 0.75)',
+  cardBorder: 'rgba(124, 58, 237, 0.25)',
 
-  inputBg: 'rgba(17, 20, 20, 0.6)',
-  inputBorder: 'rgba(255, 255, 255, 0.1)',
+  inputBg: 'rgba(30, 41, 59, 0.6)',
+  inputBorder: 'rgba(196, 181, 253, 0.2)',
 
-  error: '#ff6b6b',
+  success: '#10B981',
+  error: '#E11D48',
 };
 
+//validacion con yup
+const validationSchema = Yup.object().shape({
+
+  email: Yup.string()
+    .email('Correo electrónico inválido')
+    .required('El correo electrónico es obligatorio'),
+
+  password: Yup.string()
+    .min(6, 'La contraseña debe tener mínimo 6 caracteres')
+    .required('La contraseña es obligatoria'),
+
+});
 
 
-
+// componente login
 export default function Login() {
 
   const router = useRouter();
-
-  // Datos del formulario
-  const [credentials, setCredentials] = useState({
-    email: '',
-    password: '',
-    remember: false,
-  });
 
   // Mostrar / ocultar contraseña
   const [mostrarPassword, setMostrarPassword] = useState(false);
 
 
-  // ======================================================
-  // CAMBIAR VALORES DEL FORMULARIO
-  // ======================================================
+  // formik
+  const formik = useFormik({
 
-  const handleChange = (name, value) => {
+    initialValues: {
+      email: '',
+      password: '',
+      remember: false,
+    },
 
-    setCredentials({
-      ...credentials,
-      [name]: value,
-    });
+    validationSchema,
 
-  };
+    onSubmit: (values) => {
 
-
-  // ======================================================
-  // INICIAR SESIÓN
-  // ======================================================
-
-  const handleSubmit = () => {
-
-    const email = credentials.email.trim();
-    const password = credentials.password.trim();
-
-
-    // Validar correo vacío
-    if (!email) {
+      console.log('Iniciando sesión con:', values);
 
       Alert.alert(
-        'Campo requerido',
-        'Por favor ingresa tu correo electrónico.'
-      );
-
-      return;
-    }
-
-
-    // Validar formato del correo
-    const emailValido =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    if (!emailValido) {
-
-      Alert.alert(
-        'Correo inválido',
-        'Por favor ingresa un correo electrónico válido.'
-      );
-
-      return;
-    }
-
-
-    // Validar contraseña vacía
-    if (!password) {
-
-      Alert.alert(
-        'Campo requerido',
-        'Por favor ingresa tu contraseña.'
-      );
-
-      return;
-    }
-
-
-    // Validar longitud mínima
-    if (password.length < 6) {
-
-      Alert.alert(
-        'Contraseña inválida',
-        'La contraseña debe tener mínimo 6 caracteres.'
-      );
-
-      return;
-    }
-
-
-    // ==================================================
-    // LOGIN CORRECTO
-    // ==================================================
-
-    console.log('Iniciando sesión con:', {
-      email,
-      password,
-      remember: credentials.remember,
-    });
-
-
-    Alert.alert(
-      'Inicio de sesión',
-      '¡Inicio de sesión exitoso!',
-      [
-        {
-          text: 'Continuar',
-          onPress: () => {
-            router.replace('/(tabs)/Home');
+        'Inicio de sesión',
+        '¡Inicio de sesión exitoso!',
+        [
+          {
+            text: 'Continuar',
+            onPress: () => {
+              router.replace('/(tabs)/Home');
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
 
-  };
+    },
 
+  });
 
-  // ======================================================
-  // RECUPERAR CONTRASEÑA
-  // ======================================================
-
+// recuperar contraseña
   const handleForgotPassword = () => {
 
     Alert.alert(
@@ -171,21 +109,11 @@ export default function Login() {
 
   };
 
-
-  // ======================================================
-  // REGISTRO
-  // ======================================================
-
+//registro
   const handleRegister = () => {
-
     router.push('/register');
-
   };
 
-
-  // ======================================================
-  // INTERFAZ
-  // ======================================================
 
   return (
 
@@ -196,25 +124,17 @@ export default function Login() {
         backgroundColor={COLORS.surface}
       />
 
-
       <KeyboardAvoidingView
         style={styles.keyboard}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-
 
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
 
-
           <View style={styles.loginContainer}>
-
 
             {/* ==================================================
                 IMAGEN
@@ -228,18 +148,15 @@ export default function Login() {
                 resizeMode="cover"
               />
 
-
               <View style={styles.visualOverlay}>
 
                 <Text style={styles.visualTitle}>
                   Tu compromiso cambia vidas.
                 </Text>
 
-
                 <Text style={styles.visualSubtitle}>
-                  Cada ingreso nos acerca un paso más
-                  a encontrar el hogar perfecto para
-                  quienes más lo necesitan.
+                  Cada ingreso nos acerca un paso más a encontrar el hogar
+                  perfecto para quienes más lo necesitan.
                 </Text>
 
               </View>
@@ -247,11 +164,13 @@ export default function Login() {
             </View>
 
 
+            {/* ==================================================
+                FORMULARIO
+            ================================================== */}
 
             <View style={styles.formSide}>
 
-
-             <View style={styles.formHeader}>
+              <View style={styles.formHeader}>
 
                 <View style={styles.logoCircle}>
 
@@ -263,18 +182,20 @@ export default function Login() {
 
                 </View>
 
-
                 <Text style={styles.title}>
                   Iniciar Sesión
                 </Text>
 
-
                 <Text style={styles.subtitle}>
-                  Bienvenido de nuevo a nuestra comunidad
-                  de rescate.
+                  Bienvenido de nuevo a nuestra comunidad de rescate.
                 </Text>
 
               </View>
+
+
+              {/* ==================================================
+                  CORREO
+              ================================================== */}
 
               <View style={styles.group}>
 
@@ -282,27 +203,29 @@ export default function Login() {
                   Correo electrónico
                 </Text>
 
-
-                <View style={styles.inputContainer}>
+                <View
+                  style={[
+                    styles.inputContainer,
+                    formik.touched.email &&
+                    formik.errors.email &&
+                    styles.inputError
+                  ]}
+                >
 
                   <Ionicons
                     name="mail-outline"
                     size={20}
-                    color={COLORS.onSurfaceVariant}
+                    color={COLORS.accent}
                     style={styles.inputIcon}
                   />
-
 
                   <TextInput
                     style={styles.inputWithIcon}
                     placeholder="Ingresar correo"
-                    placeholderTextColor={
-                      COLORS.onSurfaceVariant
-                    }
-                    value={credentials.email}
-                    onChangeText={(value) =>
-                      handleChange('email', value)
-                    }
+                    placeholderTextColor={COLORS.onSurfaceVariant}
+                    value={formik.values.email}
+                    onChangeText={formik.handleChange('email')}
+                    onBlur={formik.handleBlur('email')}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -310,11 +233,24 @@ export default function Login() {
 
                 </View>
 
+
+                {/* ERROR DEL CORREO */}
+
+                {formik.touched.email &&
+                  formik.errors.email && (
+
+                    <Text style={styles.error}>
+                      {formik.errors.email}
+                    </Text>
+
+                  )}
+
               </View>
 
 
-
-             
+              {/* ==================================================
+                  CONTRASEÑA
+              ================================================== */}
 
               <View style={styles.group}>
 
@@ -323,7 +259,6 @@ export default function Login() {
                   <Text style={styles.label}>
                     Contraseña
                   </Text>
-
 
                   <TouchableOpacity
                     onPress={handleForgotPassword}
@@ -338,36 +273,38 @@ export default function Login() {
                 </View>
 
 
-                <View style={styles.passwordContainer}>
-
+                <View
+                  style={[
+                    styles.passwordContainer,
+                    formik.touched.password &&
+                    formik.errors.password &&
+                    styles.inputError
+                  ]}
+                >
 
                   <Ionicons
                     name="lock-closed-outline"
                     size={20}
-                    color={COLORS.onSurfaceVariant}
+                    color={COLORS.accent}
                   />
-
 
                   <TextInput
                     style={styles.passwordInput}
                     placeholder="Ingresar contraseña"
-                    placeholderTextColor={
-                      COLORS.onSurfaceVariant
-                    }
-                    value={credentials.password}
-                    onChangeText={(value) =>
-                      handleChange('password', value)
-                    }
+                    placeholderTextColor={COLORS.onSurfaceVariant}
+                    value={formik.values.password}
+                    onChangeText={formik.handleChange('password')}
+                    onBlur={formik.handleBlur('password')}
                     secureTextEntry={!mostrarPassword}
                     autoCapitalize="none"
                   />
 
 
+                  {/* MOSTRAR / OCULTAR CONTRASEÑA */}
+
                   <TouchableOpacity
                     onPress={() =>
-                      setMostrarPassword(
-                        !mostrarPassword
-                      )
+                      setMostrarPassword(!mostrarPassword)
                     }
                   >
 
@@ -378,40 +315,52 @@ export default function Login() {
                           : 'eye-outline'
                       }
                       size={21}
-                      color={COLORS.onSurfaceVariant}
+                      color={COLORS.accent}
                     />
 
                   </TouchableOpacity>
 
                 </View>
 
+
+                {/* ERROR DE CONTRASEÑA */}
+
+                {formik.touched.password &&
+                  formik.errors.password && (
+
+                    <Text style={styles.error}>
+                      {formik.errors.password}
+                    </Text>
+
+                  )}
+
               </View>
 
 
+              {/* ==================================================
+                  RECORDARME
+              ================================================== */}
 
-              
               <TouchableOpacity
                 style={styles.remember}
                 onPress={() =>
-                  handleChange(
+                  formik.setFieldValue(
                     'remember',
-                    !credentials.remember
+                    !formik.values.remember
                   )
                 }
                 activeOpacity={0.7}
               >
 
-
                 <View
                   style={[
                     styles.checkbox,
-
-                    credentials.remember &&
-                      styles.checkboxActive,
+                    formik.values.remember &&
+                    styles.checkboxActive,
                   ]}
                 >
 
-                  {credentials.remember && (
+                  {formik.values.remember && (
 
                     <Ionicons
                       name="checkmark"
@@ -423,7 +372,6 @@ export default function Login() {
 
                 </View>
 
-
                 <Text style={styles.rememberText}>
                   Recordarme en este dispositivo
                 </Text>
@@ -431,13 +379,15 @@ export default function Login() {
               </TouchableOpacity>
 
 
-
-           
+              {/* ==================================================
+                  BOTÓN INGRESAR
+              ================================================== */}
 
               <TouchableOpacity
                 style={styles.loginButton}
-                onPress={handleSubmit}
+                onPress={formik.handleSubmit}
                 activeOpacity={0.85}
+                disabled={formik.isSubmitting}
               >
 
                 <Ionicons
@@ -446,22 +396,24 @@ export default function Login() {
                   color={COLORS.onPrimaryContainer}
                 />
 
-
                 <Text style={styles.loginButtonText}>
-                  Ingresar
+                  {formik.isSubmitting
+                    ? 'Ingresando...'
+                    : 'Ingresar'}
                 </Text>
 
               </TouchableOpacity>
 
 
+              {/* ==================================================
+                  FOOTER
+              ================================================== */}
 
-             
               <View style={styles.footer}>
 
                 <Text style={styles.footerText}>
                   ¿No tienes una cuenta?
                 </Text>
-
 
                 <TouchableOpacity
                   onPress={handleRegister}
@@ -475,7 +427,6 @@ export default function Login() {
 
               </View>
 
-
             </View>
 
           </View>
@@ -487,27 +438,19 @@ export default function Login() {
     </SafeAreaView>
 
   );
-
 }
 
 
-
-
-
 const styles = StyleSheet.create({
-
- 
 
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.surface,
   },
 
-
   keyboard: {
     flex: 1,
   },
-
 
   scroll: {
     flexGrow: 1,
@@ -515,342 +458,249 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-
- 
-
   loginContainer: {
     width: '100%',
     maxWidth: 450,
-
     alignSelf: 'center',
-
     borderRadius: 24,
-
     overflow: 'hidden',
-
     backgroundColor: COLORS.cardBg,
-
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
 
 
- 
+
   visual: {
     height: 200,
     position: 'relative',
   },
-
 
   visualImage: {
     width: '100%',
     height: '100%',
   },
 
-
   visualOverlay: {
     position: 'absolute',
-
     left: 0,
     right: 0,
     bottom: 0,
-
     padding: 20,
-
-    backgroundColor:
-      'rgba(13, 20, 16, 0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
   },
 
-
   visualTitle: {
-    color: COLORS.primary,
-
+    color: COLORS.accent,
     fontSize: 20,
-
     fontWeight: '700',
-
     marginBottom: 6,
   },
 
-
   visualSubtitle: {
     color: COLORS.onSurface,
-
     fontSize: 12,
-
     lineHeight: 18,
   },
+
 
 
   formSide: {
     padding: 24,
   },
 
-
   formHeader: {
     marginBottom: 24,
   },
 
-
- 
   logoCircle: {
     width: 68,
     height: 68,
-
     borderRadius: 34,
-
     borderWidth: 2,
-
     borderColor: COLORS.primary,
-
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
     justifyContent: 'center',
-
     alignItems: 'center',
-
     alignSelf: 'center',
-
     marginBottom: 18,
   },
 
-
-  
   title: {
     color: COLORS.onSurface,
-
     fontSize: 28,
-
     fontWeight: '700',
-
     textAlign: 'center',
-
     marginBottom: 8,
   },
 
-
   subtitle: {
     color: COLORS.onSurfaceVariant,
-
     fontSize: 13,
-
     lineHeight: 19,
-
     textAlign: 'center',
   },
 
+  // ======================================================
+  // INPUTS
+  // ======================================================
 
- 
   group: {
     marginBottom: 16,
   },
 
-
   label: {
-    color: COLORS.onSurfaceVariant,
-
+    color: COLORS.accent,
     fontSize: 12,
-
     fontWeight: '600',
-
     marginBottom: 8,
   },
-
 
   labelRow: {
     flexDirection: 'row',
-
     justifyContent: 'space-between',
-
     alignItems: 'center',
-
     marginBottom: 8,
   },
 
-
   forgot: {
-    color: COLORS.primary,
-
+    color: COLORS.accent,
     fontSize: 11,
-
     fontWeight: '600',
   },
 
-
-
   inputContainer: {
     height: 50,
-
     backgroundColor: COLORS.inputBg,
-
     borderWidth: 1,
-
     borderColor: COLORS.inputBorder,
-
     borderRadius: 12,
-
     flexDirection: 'row',
-
     alignItems: 'center',
-
     paddingHorizontal: 15,
   },
 
+  inputError: {
+    borderColor: COLORS.error,
+  },
 
   inputIcon: {
     marginRight: 10,
   },
 
-
   inputWithIcon: {
     flex: 1,
-
     height: '100%',
-
     color: COLORS.onSurface,
-
     fontSize: 14,
   },
 
-
-  
   passwordContainer: {
     height: 50,
-
     backgroundColor: COLORS.inputBg,
-
     borderWidth: 1,
-
     borderColor: COLORS.inputBorder,
-
     borderRadius: 12,
-
     flexDirection: 'row',
-
     alignItems: 'center',
-
     paddingLeft: 15,
-
     paddingRight: 14,
   },
 
-
   passwordInput: {
     flex: 1,
-
     height: '100%',
-
     color: COLORS.onSurface,
-
     fontSize: 14,
-
     marginLeft: 10,
-
     marginRight: 10,
   },
 
+  // ======================================================
+  // ERRORES
+  // ======================================================
 
- 
+  error: {
+    color: COLORS.error,
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+
+  // ======================================================
+  // RECORDARME
+  // ======================================================
 
   remember: {
     flexDirection: 'row',
-
     alignItems: 'center',
-
     marginBottom: 22,
   },
 
-
   checkbox: {
     width: 20,
-
     height: 20,
-
     borderWidth: 1,
-
-    borderColor: COLORS.onSurfaceVariant,
-
+    borderColor: COLORS.accent,
     borderRadius: 5,
-
     marginRight: 10,
-
     justifyContent: 'center',
-
     alignItems: 'center',
   },
-
 
   checkboxActive: {
     backgroundColor: COLORS.primary,
-
     borderColor: COLORS.primary,
   },
 
-
   rememberText: {
     color: COLORS.onSurfaceVariant,
-
     fontSize: 12,
   },
 
+  // ======================================================
+  // BOTÓN
+  // ======================================================
 
-  
   loginButton: {
     height: 52,
-
     backgroundColor: COLORS.primaryContainer,
-
     borderRadius: 12,
-
     justifyContent: 'center',
-
     alignItems: 'center',
-
     flexDirection: 'row',
-
     gap: 9,
   },
 
-
   loginButtonText: {
     color: COLORS.onPrimaryContainer,
-
     fontSize: 15,
-
     fontWeight: '700',
   },
 
+  // ======================================================
+  // FOOTER
+  // ======================================================
 
- 
   footer: {
     flexDirection: 'row',
-
     justifyContent: 'center',
-
     alignItems: 'center',
-
     borderTopWidth: 1,
-
     borderTopColor: COLORS.cardBorder,
-
     marginTop: 20,
-
     paddingTop: 18,
   },
 
-
   footerText: {
     color: COLORS.onSurfaceVariant,
-
     fontSize: 12,
-
     marginRight: 4,
   },
 
-
   footerLink: {
-    color: COLORS.primary,
-
+    color: COLORS.accent,
     fontSize: 12,
-
     fontWeight: '700',
   },
 

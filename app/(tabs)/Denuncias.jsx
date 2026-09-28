@@ -20,9 +20,6 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 // Limita un valor entre un mínimo y un máximo
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-// -----------------------------------------------------------------------
-// Paleta — mismos tokens Material 3 que las demás pantallas
-// -----------------------------------------------------------------------
 const COLORS = {
   primary: '#61de8a',
   primaryContainer: '#27ae60',
@@ -57,20 +54,16 @@ export default function ReportScreen({ navigation }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleUseGPS() {
-    // TODO: cuando se pueda instalar `expo-location`, reemplazar este aviso
-    // por la obtención real de coordenadas + reverse geocoding.
     Alert.alert(
       'GPS no disponible todavía',
-      'Por ahora escribe la dirección manualmente en el buscador. Cuando instalemos expo-location, este botón la completará automáticamente.'
+      'Por ahora escribe la dirección manualmente en el buscador.'
     );
   }
 
   function handlePickEvidence() {
-    // TODO: cuando se pueda instalar `expo-image-picker`, reemplazar este
-    // aviso por la selección real de fotos/videos de la galería.
     Alert.alert(
       'Carga de archivos no disponible todavía',
-      'Esta función se activará cuando instalemos expo-image-picker. Por ahora puedes describir la evidencia en el campo de texto de arriba.'
+      'Esta función se activará próximamente.'
     );
   }
 
@@ -78,7 +71,6 @@ export default function ReportScreen({ navigation }) {
     setReportType('abuso');
     setLocation('');
     setDescription('');
-    setEvidence([]);
   }
 
   function handleSubmit() {
@@ -96,8 +88,6 @@ export default function ReportScreen({ navigation }) {
 
     setIsSubmitting(true);
 
-    // TODO: reemplazar por el POST real cuando exista backend
-    // (Laravel de Sello Guardian). Por ahora simula el envío.
     setTimeout(() => {
       setIsSubmitting(false);
       Alert.alert(
@@ -142,8 +132,7 @@ export default function ReportScreen({ navigation }) {
         >
           <Text style={styles.pageTitle}>Realizar Denuncia</Text>
           <Text style={styles.pageSubtitle}>
-            Su reporte puede salvar una vida. Complete el formulario con la
-            mayor precisión posible.
+            Su reporte puede salvar una vida. Complete el formulario con la mayor precisión posible.
           </Text>
 
           {/* Card educativa */}
@@ -155,10 +144,7 @@ export default function ReportScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoTitle}>Denuncia Segura y Anónima</Text>
                 <Text style={styles.infoText}>
-                  Toda la información proporcionada es estrictamente
-                  confidencial. Nuestro equipo de rescate verificará los datos
-                  antes de intervenir para asegurar la seguridad de los
-                  animales y la suya.
+                  Toda la información proporcionada es estrictamente confidencial.
                 </Text>
               </View>
             </View>
@@ -230,15 +216,6 @@ export default function ReportScreen({ navigation }) {
                 onChangeText={setLocation}
               />
             </View>
-
-            {location ? (
-              <View style={styles.locationPreview}>
-                <MaterialIcons name="place" size={18} color={COLORS.primary} />
-                <Text style={styles.locationPreviewText} numberOfLines={2}>
-                  {location}
-                </Text>
-              </View>
-            ) : null}
           </View>
 
           {/* 3. Descripción */}
@@ -250,7 +227,7 @@ export default function ReportScreen({ navigation }) {
 
             <TextInput
               style={styles.textArea}
-              placeholder="Describa el estado del animal, número de animales involucrados, personas responsables (si las conoce) o cualquier detalle relevante..."
+              placeholder="Describa el estado del animal..."
               placeholderTextColor={COLORS.onSurfaceVariant}
               value={description}
               onChangeText={setDescription}
@@ -276,9 +253,7 @@ export default function ReportScreen({ navigation }) {
                 <MaterialIcons name="upload-file" size={28} color={COLORS.onSurface} />
               </View>
               <Text style={styles.uploadTitle}>Toque para subir fotos o videos</Text>
-              <Text style={styles.uploadHint}>
-                Máx {MAX_EVIDENCE_FILES} archivos. JPG, PNG o MP4.
-              </Text>
+              <Text style={styles.uploadHint}>Máx {MAX_EVIDENCE_FILES} archivos.</Text>
             </TouchableOpacity>
           </View>
 
@@ -294,15 +269,12 @@ export default function ReportScreen({ navigation }) {
               {isSubmitting ? 'Enviando…' : 'Enviar Denuncia'}
             </Text>
           </TouchableOpacity>
-
-          <Text style={styles.disclaimer}>
-            Al enviar, confirma que la información proporcionada es veraz.
-          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,205 +16,124 @@ import {
   Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter} from "expo-router";
-import { useNavigation } from "expo-router";
-import { DrawerTrigger } from "expo-router/drawer";
+import { useRouter } from "expo-router";
+import { useNavigation } from "expo-router"; 
 import { useMenu } from "../../context/menuContext";
 
+// Importa tu nuevo componente Navbar reutilizable
+import Navbar from "../../components/Navbar";
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-// Paleta — Material 3 (Morado Claro & Vívido)
+ 
 const COLORS = {
-  primary: "#c084fc",
-  primaryContainer: "#9333ea",
-  onPrimaryContainer: "#ffffff",
-  surface: "#0f0d15",
-  surfaceContainer: "#181524",
-  surfaceContainerHigh: "#231f33",
-  onSurface: "#f5f3ff",
-  onSurfaceVariant: "#c4b5fd",
-  cardBg: "rgba(255, 255, 255, 0.05)",
+  primary: "#7C3AED",
+  primaryContainer: "#7C3AED",
+  onPrimaryContainer: "#FFFFFF",
+  surface: "#0F172A",
+  surfaceContainer: "rgba(15, 23, 42, 0.75)",
+  surfaceContainerHigh: "#0F172A",
+  onSurface: "#FFFFFF",
+  onSurfaceVariant: "#C4B5FD",
+  cardBg: "rgba(15, 23, 42, 0.75)",
   cardBorder: "rgba(255, 255, 255, 0.12)",
-  error: "#ffb4ab",
-  success: "#4ade80",
+  error: "#E11D48",
+  success: "#10B981",
 };
-
-// Datos de ejemplo extendidos con Nombre, Vacunas e Historial Médico
+ 
 const REPORTS = [
   {
     id: "r1",
     title: "Canino en abandono",
     name: "Apolo",
-    location: "Calle 45 #23-10, Bogotá DC",
+    location: "Calle 45 #23-10, Popayán",
     breed: "Mestizo (Canino)",
     age: "Aprox. 2 años",
     gender: "Macho",
     status: "Urgente",
     vaccines: "Rabia (Sí), Pentavalente (Incompleta)",
     medicalHistory: "Desnutrición leve, heridas superficiales tratadas. Sin parásitos internos.",
-    history:
-      "Fue rescatado vagando cerca de una vía principal tras ser abandonado. Mostraba desnutrición leve y temor, pero ha respondido muy bien a los cuidados básicos y refugio temporal.",
+    history: "Fue rescatado vagando cerca de una vía principal tras ser abandonado...",
     image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80",
     tags: [
       { label: "URGENTE", color: "#ef4444" },
       { label: "MALTRATO", color: "#f97316" },
     ],
-  },
-  {
-    id: "r2",
-    title: "Camada de gatos",
-    name: "Hermanos Pelusa (3)",
-    location: "Carrera 7 con Calle 12, Chía",
-    breed: "Mestizos (Felinos)",
-    age: "Aprox. 3 meses",
-    gender: "Hembras / Machos",
-    status: "En Proceso",
-    vaccines: "Sin vacunas (Requiere esquema de cachorros)",
-    medicalHistory: "Desparasitados recientemente. Buena condición respiratoria y afección leve en ojos en tratamiento.",
-    history:
-      "Encontrados dentro de una caja de cartón cerca de un terreno baldío. Fueron rescatados por vecinos del sector y actualmente reciben valoración médica y desparasitación.",
-    image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80",
-    tags: [
-      { label: "EN PROCESO", color: "#a855f7" },
-      { label: "ABANDONO", color: "#6366f1" },
-    ],
-  },
+  }, 
 ];
 
 const PETS = [
   {
     id: "p1",
     name: "Luna",
-    info: "Labrador • 2 años • Bogotá",
+    info: "Labrador • 2 años • Popayán",
+    breed: "Labrador Retriever",
+    age: "2 años",
+    gender: "Hembra",
+    status: "En Adopción",
+    vaccines: "Al día (Rabia, Parvovirus)",
+    medicalHistory: "Esterilizada, excelente salud general.",
+    history: "Es una perrita muy juguetona, cariñosa y llena de energía.",
     image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80",
     tag: { label: "URGENTE", color: "#ef4444" },
-  },
-  {
-    id: "p2",
-    name: "Milan",
-    info: "Golden • 1 año • Medellín",
-    image: "https://images.unsplash.com/photo-1552053831-71594a27632d?q=80",
-    tag: { label: "NUEVO", color: COLORS.primaryContainer },
-  },
+  }, 
 ];
 
 export default function Home() {
   const router = useRouter();
-
-  const navigation = useNavigation(); //Inicializamos el hook de navegación
-
-  //Creeamos una funcion para un acceso directo al Drawer padre
-  const abrirMenuLateral = () => {
-    router.push("/drawer");
-    };
-
-  // Estados para métricas reales
+ 
   const [adoptadosCount, setAdoptadosCount] = useState(0);
   const [denunciasCount, setDenunciasCount] = useState(0);
-  const [voluntariosCount, setVoluntariosCount] = useState(0);
-
-  // Estado para el modal de detalle de reporte
+  const [voluntariosCount, setVoluntariosCount] = useState(0); 
   const [reporteSeleccionado, setReporteSeleccionado] = useState(null);
-
-  // Favoritos
+  const [mascotaSeleccionada, setMascotaSeleccionada] = useState(null);
   const [favoritos, setFavoritos] = useState({});
   const [busqueda, setBusqueda] = useState("");
 
-  const {openMenu } = useMenu();
+  const reportsScrollViewRef = useRef(null);
+  const petsScrollViewRef = useRef(null);
+
+  const mascotasFiltradas = PETS.filter((pet) =>
+    pet.name.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   function toggleFavorito(id) {
-    setFavoritos((prev) => ({ 
-      ...prev, [id]: !prev[id] }));
+    setFavoritos((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
   function verDetalleReporte(report) {
     setReporteSeleccionado(report);
   }
 
-  function irAMascotas(pet) {
-    setAdoptadosCount((prev) => prev + 1);
-    Alert.alert(
-      "¡Gracias!",
-      `Has iniciado el proceso para adoptar a ${pet.name}.`
-    );
-    router.push("/(tabs)/Mascotas");
+  function verDetalleMascota(pet) {
+    setMascotaSeleccionada(pet);
   }
 
-  const mascotasFiltradas = PETS.filter((pet) =>
-    pet.name.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  function irAFormularioAdopcion(item) {
+    setReporteSeleccionado(null);
+    setMascotaSeleccionada(null);
+    Alert.alert("Formulario de Adopción", `Iniciando formulario para ${item?.name || "esta mascota"}.`);
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.surface} translucent={false} />
 
-      {/* NAVBAR SUPERIOR CON BOTÓN DE PERFIL */}
-      <View style={styles.navbar}>
-        <View style={styles.brandContainer}>
-          {/* Agregamos un botón hamburguesa agregado al inicio */}
-          <TouchableOpacity   
-            onPress={abrirMenuLateral} 
-            style={{ 
-              marginRight: 12,
-              padding: 4 }}
-            >
-            <Ionicons 
-              name="menu-outline" 
-              size={26} color={COLORS.onSurface} />
-          </TouchableOpacity>
+      {/* NAVBAR REUTILIZABLE LLAMADO AQUÍ */}
+      <Navbar unreadNotifications={2} />
 
-          <Text style={styles.logoIcon}>🛡️</Text>
-          <Text style={styles.brandTitle}>SELLO GUARDIÁN</Text>
-        </View>
-        <View style={styles.navActions}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() =>
-              Alert.alert("Notificaciones", "No tienes notificaciones nuevas.")
-            }
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={COLORS.onSurface}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => router.push("/(tabs)/Perfil")}
-          >
-            <Ionicons
-              name="person-circle-outline"
-              size={26}
-              color={COLORS.primary}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
         {/* HERO SECTION */}
-        <ImageBackground
-          source={require("../../assets/fondo.jpg")}
-          style={styles.heroBackground}
-        >
+        <ImageBackground source={require("../../assets/fondo.jpg")} style={styles.heroBackground}>
           <View style={styles.heroOverlay}>
             <Text style={styles.heroTitle}>
               La lucha contra el{"\n"}
               <Text style={styles.heroHighlight}>maltrato animal{"\n"}</Text>
               nunca termina
-            </Text>
-
+            </Text> 
             <Text style={styles.heroSubtitle}>
               Anímate a denunciar, adoptar y proteger a los que no tienen voz.
-            </Text>
-
+            </Text> 
             <TouchableOpacity
               style={styles.primaryButton}
               activeOpacity={0.85}
@@ -249,6 +168,7 @@ export default function Home() {
           </Text>
 
           <ScrollView
+            ref={reportsScrollViewRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.cardsScroll}
@@ -315,6 +235,7 @@ export default function Home() {
             </Text>
           ) : (
             <ScrollView
+              ref={petsScrollViewRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.cardsScroll}
@@ -356,11 +277,10 @@ export default function Home() {
                       <TouchableOpacity
                         style={styles.adoptButton}
                         activeOpacity={0.85}
-                        onPress={() => irAMascotas(pet)}
+                        onPress={() => verDetalleMascota(pet)}
                       >
                         <Text style={styles.adoptButtonText}>
-                          Quiero adoptarl
-                          {pet.name.endsWith("a") ? "a" : "o"}
+                          Ver detalles
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -369,6 +289,16 @@ export default function Home() {
               })}
             </ScrollView>
           )}
+
+          {/* BOTÓN NAVEGAR A MÁS MASCOTAS */}
+          <TouchableOpacity
+            style={styles.seeMorePetsButton}
+            activeOpacity={0.85}
+            onPress={() => router.push("/(tabs)/Mascotas")}
+          >
+            <Text style={styles.seeMorePetsButtonText}>Ver más mascotas</Text>
+            <Ionicons name="arrow-forward" size={18} color={COLORS.onPrimaryContainer} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -381,8 +311,7 @@ export default function Home() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            {/* Header Modal */}
-            <View style={styles.modalHeader}>
+            <View style={styles.modalHeader}> 
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalHeaderTitle} numberOfLines={1}>
                   {reporteSeleccionado?.title}
@@ -398,8 +327,7 @@ export default function Home() {
                 <Ionicons name="close" size={20} color={COLORS.onSurface} />
               </TouchableOpacity>
             </View>
-
-            {/* Bloque Superior: Info Izquierda / Imagen Derecha */}
+ 
             <View style={styles.modalTopRow}>
               <View style={styles.modalInfoContainer}>
                 <View style={styles.infoRow}>
@@ -430,8 +358,7 @@ export default function Home() {
                 style={styles.modalImage}
               />
             </View>
-
-            {/* Bloque de Salud y Clínica */}
+ 
             <View style={styles.healthContainer}>
               <View style={styles.healthItem}>
                 <Text style={styles.healthLabel}>💉 Vacunas:</Text>
@@ -443,8 +370,7 @@ export default function Home() {
                 <Text style={styles.healthText}>{reporteSeleccionado?.medicalHistory}</Text>
               </View>
             </View>
-
-            {/* Bloque Inferior: Historia / Rescate */}
+ 
             <View style={styles.historyContainer}>
               <Text style={styles.historyLabel}>Antecedentes / Rescate:</Text>
               <Text style={styles.historyText}>
@@ -452,13 +378,115 @@ export default function Home() {
               </Text>
             </View>
 
-            {/* Botón Acción Cierre */}
+            <TouchableOpacity
+              style={styles.modalAdoptButton}
+              activeOpacity={0.85}
+              onPress={() => irAFormularioAdopcion(reporteSeleccionado)}
+            >
+              <Text style={styles.modalAdoptButtonText}>Adoptar</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.modalActionButton}
               activeOpacity={0.85}
               onPress={() => setReporteSeleccionado(null)}
             >
               <Text style={styles.modalActionButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL DE DETALLES DE LA MASCOTA */}
+      <Modal
+        visible={!!mascotaSeleccionada}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setMascotaSeleccionada(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  {mascotaSeleccionada?.name}
+                </Text>
+                <Text style={styles.modalHeaderSubtitle}>
+                  Info: <Text style={{ color: COLORS.primary, fontWeight: "bold" }}>{mascotaSeleccionada?.info}</Text>
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setMascotaSeleccionada(null)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={20} color={COLORS.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalTopRow}>
+              <View style={styles.modalInfoContainer}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Raza:</Text>
+                  <Text style={styles.infoValue}>{mascotaSeleccionada?.breed}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Edad:</Text>
+                  <Text style={styles.infoValue}>{mascotaSeleccionada?.age}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Sexo:</Text>
+                  <Text style={styles.infoValue}>{mascotaSeleccionada?.gender}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Estado:</Text>
+                  <Text style={[styles.infoValue, { color: COLORS.primary }]}>
+                    {mascotaSeleccionada?.status}
+                  </Text>
+                </View>
+              </View>
+
+              <Image
+                source={{ uri: mascotaSeleccionada?.image }}
+                style={styles.modalImage}
+              />
+            </View>
+
+            <View style={styles.healthContainer}>
+              <View style={styles.healthItem}>
+                <Text style={styles.healthLabel}>💉 Vacunas:</Text>
+                <Text style={styles.healthText}>{mascotaSeleccionada?.vaccines}</Text>
+              </View>
+
+              <View style={styles.healthItem}>
+                <Text style={styles.healthLabel}>📋 Historial Médico:</Text>
+                <Text style={styles.healthText}>{mascotaSeleccionada?.medicalHistory}</Text>
+              </View>
+            </View>
+
+            <View style={styles.historyContainer}>
+              <Text style={styles.historyLabel}>Sobre {mascotaSeleccionada?.name}:</Text>
+              <Text style={styles.historyText}>
+                {mascotaSeleccionada?.history}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalAdoptButton}
+              activeOpacity={0.85}
+              onPress={() => irAFormularioAdopcion(mascotaSeleccionada)}
+            >
+              <Text style={styles.modalAdoptButtonText}>Adoptar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalActionButton}
+              activeOpacity={0.85}
+              onPress={() => setMascotaSeleccionada(null)}
+            >
+              <Text style={styles.modalActionButtonText}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -487,9 +515,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  logoIcon: {
-    fontSize: 20,
-    marginRight: 6,
+  logoImage: {
+    width: 28,
+    height: 28,
+    marginRight: 8,
   },
   brandTitle: {
     color: COLORS.primary,
@@ -505,9 +534,25 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 4,
   },
+  notificationBadge: {
+    position: "absolute",
+    top: -4,
+    right: -6,
+    backgroundColor: COLORS.error,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 3,
+  },
+  notificationBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
   heroBackground: {
-    width: "100%",
-    
+    width: "100%", 
   },
   heroOverlay: {
     backgroundColor: "rgba(15, 13, 21, 0.85)",
@@ -719,6 +764,22 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
   },
+  seeMorePetsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 18,
+    gap: 8,
+  },
+  seeMorePetsButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 14,
+  },
 
   /* ESTILOS DEL MODAL DE DETALLES */
   modalOverlay: {
@@ -827,14 +888,28 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     lineHeight: 16,
   },
-  modalActionButton: {
+  modalAdoptButton: {
     backgroundColor: COLORS.primaryContainer,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  modalAdoptButtonText: {
+    color: COLORS.onPrimaryContainer,
+    fontWeight: "bold",
+    fontSize: 13,
+  },
+  modalActionButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
   modalActionButtonText: {
-    color: COLORS.onPrimaryContainer,
+    color: COLORS.onSurfaceVariant,
     fontWeight: "bold",
     fontSize: 13,
   },
