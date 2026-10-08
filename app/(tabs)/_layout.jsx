@@ -14,6 +14,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.onSurfaceVariant,
+        // Ocultamos los textos y centalizamos los iconos
+        // tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: COLORS.surface,
           borderTopColor: "rgba(255,255,255,0.1)",
@@ -32,7 +34,7 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="Mascotas"
+        name="Adopcion"
         options={{
           title: "Adoptar",
           tabBarIcon: ({ color, size }) => (
@@ -44,9 +46,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Reportes"
         options={{
-          title: "Reportar",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="paw-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "alert-circle" : "alert-circle-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -62,10 +63,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="Favoritos"
         options={{
-          title: "Favoritos",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? "star" : "star-outline"}
+              name={focused ? "heart" : "heart-outline"}
               size={size}
               color={color}
             />

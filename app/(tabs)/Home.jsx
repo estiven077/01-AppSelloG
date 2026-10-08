@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+  import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -36,8 +36,7 @@ const COLORS = {
   onSurface: "#FFFFFF",
   onSurfaceVariant: "#C4B5FD",
   cardBg: "rgba(15, 23, 42, 0.75)",
-  cardBorder: "rgba(255, 255, 255, 0.12)",
-  error: "#E11D48",
+  cardBorder: "rgba(255, 255, 255, 0.12)", 
   success: "#10B981",
 };
  
@@ -494,6 +493,7 @@ export default function Home() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

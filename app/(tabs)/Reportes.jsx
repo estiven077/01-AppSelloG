@@ -7,7 +7,7 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  Alert,
+  Alert,  
   Modal,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -19,10 +19,8 @@ import Navbar from "../../components/Navbar";
 // IMPORTAMOS LOS ESTILOS Y COLORES DESDE LA CARPETA STYLES
 import { styles } from "../../styles/Reportes.js";
 
-// Si en tu archivo de estilos pusiste COLORS de forma local, puedes definir una referencia 
-// rápida para los colores que usa tu lógica (como COLORS.surface, COLORS.primary, etc.):
 const COLORS = {
-  primary: "#a855f7",          // Tu color morado principal
+  primary: "#a855f7",          // Color morado principal
   primaryContainer: "#9333ea",  // Contenedor morado
   onPrimaryContainer: "#ffffff",// Texto sobre contenedor
   surface: "#111414",
@@ -54,6 +52,7 @@ export default function ReportesScreen() {
   const [zona, setZona] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [reportType, setReportType] = useState('abuso');
+  const [otraSituacion, setOtraSituacion] = useState("");
 
   useEffect(() => {
     cargarReportes();
@@ -216,7 +215,7 @@ export default function ReportesScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ============== ENCABEZADO ============== */}
+        {/* ===== ENCABEZADO ===== */}
         <View style={styles.header}>
           <Text style={styles.sectionBadge}>
             VIGILANCIA COMUNITARIA
@@ -247,7 +246,7 @@ export default function ReportesScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ================= ESTADÍSTICAS ================= */}
+        {/* ===== ESTADÍSTICAS ===== */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Ionicons
@@ -292,7 +291,7 @@ export default function ReportesScreen() {
           </View>
         </View>
 
-        {/* ================= BUSCADOR ================= */}
+        {/* ====== BUSCADOR ====== */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>
             Buscar reportes
@@ -326,7 +325,7 @@ export default function ReportesScreen() {
           </View>
         </View>
 
-        {/* ===== FILTROS ===== */}
+        {/*        FILTROS        */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -478,7 +477,7 @@ export default function ReportesScreen() {
           )}
         </View>
 
-        {/* ================= MENSAJE FINAL ================= */}
+        {/* ====== MENSAJE FINAL ======*/}
         <View style={styles.helpCard}>
           <View style={styles.helpIcon}>
             <Ionicons
@@ -499,7 +498,7 @@ export default function ReportesScreen() {
         </View>
       </ScrollView>
 
-      {/* ================= MODAL PARA CREAR REPORTE ================= */}
+      {/* ====== MODAL PARA CREAR REPORTE ====== */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -549,26 +548,64 @@ export default function ReportesScreen() {
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle}>Tipo de Situación</Text>
                 </View>
-                <View style={styles.typeGrid}>
-                  {REPORT_TYPES.map((type) => {
+
+                <View style={styles.typeList}>
+                  {REPORT_TYPES.map((type, index) => {
                     const selected = reportType === type.id;
+
                     return (
                       <TouchableOpacity
                         key={type.id}
                         style={[
-                          styles.typeOption,
-                          type.wide && styles.typeOptionWide,
-                          selected && styles.typeOptionSelected,
+                          styles.typeItem,
+                          selected && styles.typeItemSelected,
+                          index === REPORT_TYPES.length - 1 && styles.typeItemLast,
                         ]}
                         activeOpacity={0.8}
                         onPress={() => setReportType(type.id)}
                       >
-                        <MaterialIcons
-                          name={type.icon}
-                          size={22}
-                          color={selected ? COLORS.primary : COLORS.onSurfaceVariant}
-                        />
-                        <Text style={styles.typeLabel}>{type.label}</Text>
+                        <View style={styles.typeItemLeft}>
+                          <View
+                            style={[
+                              styles.typeIcon,
+                              selected && styles.typeIconSelected,
+                            ]}
+                          >
+                            <MaterialIcons
+                              name={type.icon}
+                              size={21}
+                              color={
+                                selected
+                                  ? COLORS.primary
+                                  : COLORS.onSurfaceVariant
+                              }
+                            />
+                          </View>
+
+                          <Text
+                            style={[
+                              styles.typeLabel,
+                              selected && styles.typeLabelSelected,
+                            ]}
+                          >
+                            {type.label}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.radio,
+                            selected && styles.radioSelected,
+                          ]}
+                        >
+                          {selected && (
+                            <MaterialIcons
+                              name="check"
+                              size={16}
+                              color="#FFFFFF"
+                            />
+                          )}
+                        </View>
                       </TouchableOpacity>
                     );
                   })}

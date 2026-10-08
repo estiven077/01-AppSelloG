@@ -16,6 +16,9 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
+// Componente Navbar reutilizable
+import Navbar from '../../components/Navbar';
+
 // Paleta del proyecto - Material 3
 const COLORS = {
   primary: '#7C3AED',
@@ -126,7 +129,7 @@ const SIZES = ['Todos', 'Pequeño', 'Mediano', 'Grande'];
 const AGES = ['Todos', 'Cachorro', 'Joven', 'Adulto'];
 const GENDERS = ['Todos', 'Macho', 'Hembra'];
 
-export default function SpeciesScreen({ onProfilePress }) {
+export default function MascotasScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -136,6 +139,10 @@ export default function SpeciesScreen({ onProfilePress }) {
   const [selectedSize, setSelectedSize] = useState('Todos');
   const [selectedAge, setSelectedAge] = useState('Todos');
   const [selectedGender, setSelectedGender] = useState('Todos');
+
+  // Estados del Menú Desplegable de Filtros
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [activeSubFilter, setActiveSubFilter] = useState(null);
 
   // Estado del Modal
   const [selectedPet, setSelectedPet] = useState(null);
@@ -179,46 +186,36 @@ export default function SpeciesScreen({ onProfilePress }) {
     setSelectedSize('Todos');
     setSelectedAge('Todos');
     setSelectedGender('Todos');
+    setActiveSubFilter(null);
+    setIsFiltersOpen(false);
   };
 
-  const handleGoToProfile = () => {
-    if (onProfilePress) {
-      onProfilePress();
-    } else {
-      router.push('/(tabs)/Perfil');
-    }
+  const toggleSubFilter = (filterType) => {
+    setActiveSubFilter((prev) => (prev === filterType ? null : filterType));
   };
+
+  const activeFiltersCount = [
+    selectedSize !== 'Todos',
+    selectedAge !== 'Todos',
+    selectedGender !== 'Todos',
+  ].filter(Boolean).length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.surface} />
+    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
 
-      {/* HEADER EXACTO DE TU PROYECTO (SIN HAMBURGUESA) */}
-      <View style={[styles.header, { paddingTop: 10 + insets.top }]}>
-        <View style={styles.headerTitleRow}>
-          <MaterialCommunityIcons name="paw" size={22} color={COLORS.primary} />
-          <Text style={styles.headerTitle}>Sello Guardián</Text>
-        </View>
-
-        {/* BOTÓN DE PERFIL IDENTICO AL HOME */}
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={handleGoToProfile}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="person-circle-outline"
-            size={26}
-            color={COLORS.primary}
-          />
-        </TouchableOpacity>
-      </View>
+      {/* NAVBAR REUTILIZABLE */}
+      <Navbar unreadNotifications={2} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: 60 + insets.bottom },
+          { paddingBottom: 80 + insets.bottom },
         ]}
       >
         {/* BUSCADOR */}
@@ -272,75 +269,155 @@ export default function SpeciesScreen({ onProfilePress }) {
           })}
         </ScrollView>
 
-        {/* FILTROS POR CHIPS */}
-        <View style={styles.filtersSection}>
-          <Text style={styles.filterGroupTitle}>Filtrar por características:</Text>
+        {/* MÓDULO DE FILTROS DESPLEGABLE */}
+        <View style={styles.dropdownSection}>
+          <TouchableOpacity
+            style={styles.dropdownHeader}
+            activeOpacity={0.8}
+            onPress={() => setIsFiltersOpen(!isFiltersOpen)}
+          >
+            <View style={styles.dropdownHeaderLeft}>
+              <Ionicons name="options-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.dropdownHeaderText}>Filtros Avanzados</Text>
+              {activeFiltersCount > 0 && (
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>{activeFiltersCount}</Text>
+                </View>
+              )}
+            </View>
+            <Ionicons
+              name={isFiltersOpen ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={COLORS.onSurfaceVariant}
+            />
+          </TouchableOpacity>
 
-          {/* Tamaño */}
-          <View style={styles.chipFilterRow}>
-            <Text style={styles.chipLabel}>Tamaño:</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRowContainer}
-            >
-              {SIZES.map((size) => (
-                <TouchableOpacity
-                  key={size}
-                  style={[styles.chip, selectedSize === size && styles.chipActive]}
-                  onPress={() => setSelectedSize(size)}
-                >
-                  <Text style={[styles.chipText, selectedSize === size && styles.chipTextActive]}>
-                    {size}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          {isFiltersOpen && (
+            <View style={styles.dropdownContent}>
+              {/* Opción Tamaño */}
+              <TouchableOpacity
+                style={[
+                  styles.subFilterHeader,
+                  activeSubFilter === 'size' && styles.subFilterHeaderActive,
+                ]}
+                onPress={() => toggleSubFilter('size')}
+              >
+                <Text style={styles.subFilterTitle}>
+                  Tamaño {selectedSize !== 'Todos' ? `(${selectedSize})` : ''}
+                </Text>
+                <Ionicons
+                  name={activeSubFilter === 'size' ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={COLORS.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+              {activeSubFilter === 'size' && (
+                <View style={styles.optionsContainer}>
+                  {SIZES.map((size) => (
+                    <TouchableOpacity
+                      key={size}
+                      style={[
+                        styles.chipOption,
+                        selectedSize === size && styles.chipOptionActive,
+                      ]}
+                      onPress={() => setSelectedSize(size)}
+                    >
+                      <Text
+                        style={[
+                          styles.chipOptionText,
+                          selectedSize === size && styles.chipOptionTextActive,
+                        ]}
+                      >
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
-          {/* Edad */}
-          <View style={styles.chipFilterRow}>
-            <Text style={styles.chipLabel}>Edad:</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRowContainer}
-            >
-              {AGES.map((age) => (
-                <TouchableOpacity
-                  key={age}
-                  style={[styles.chip, selectedAge === age && styles.chipActive]}
-                  onPress={() => setSelectedAge(age)}
-                >
-                  <Text style={[styles.chipText, selectedAge === age && styles.chipTextActive]}>
-                    {age}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+              {/* Opción Edad */}
+              <TouchableOpacity
+                style={[
+                  styles.subFilterHeader,
+                  activeSubFilter === 'age' && styles.subFilterHeaderActive,
+                ]}
+                onPress={() => toggleSubFilter('age')}
+              >
+                <Text style={styles.subFilterTitle}>
+                  Edad {selectedAge !== 'Todos' ? `(${selectedAge})` : ''}
+                </Text>
+                <Ionicons
+                  name={activeSubFilter === 'age' ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={COLORS.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+              {activeSubFilter === 'age' && (
+                <View style={styles.optionsContainer}>
+                  {AGES.map((age) => (
+                    <TouchableOpacity
+                      key={age}
+                      style={[
+                        styles.chipOption,
+                        selectedAge === age && styles.chipOptionActive,
+                      ]}
+                      onPress={() => setSelectedAge(age)}
+                    >
+                      <Text
+                        style={[
+                          styles.chipOptionText,
+                          selectedAge === age && styles.chipOptionTextActive,
+                        ]}
+                      >
+                        {age}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
-          {/* Género */}
-          <View style={styles.chipFilterRow}>
-            <Text style={styles.chipLabel}>Género:</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRowContainer}
-            >
-              {GENDERS.map((gen) => (
-                <TouchableOpacity
-                  key={gen}
-                  style={[styles.chip, selectedGender === gen && styles.chipActive]}
-                  onPress={() => setSelectedGender(gen)}
-                >
-                  <Text style={[styles.chipText, selectedGender === gen && styles.chipTextActive]}>
-                    {gen}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+              {/* Opción Género */}
+              <TouchableOpacity
+                style={[
+                  styles.subFilterHeader,
+                  activeSubFilter === 'gender' && styles.subFilterHeaderActive,
+                ]}
+                onPress={() => toggleSubFilter('gender')}
+              >
+                <Text style={styles.subFilterTitle}>
+                  Género {selectedGender !== 'Todos' ? `(${selectedGender})` : ''}
+                </Text>
+                <Ionicons
+                  name={activeSubFilter === 'gender' ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={COLORS.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+              {activeSubFilter === 'gender' && (
+                <View style={styles.optionsContainer}>
+                  {GENDERS.map((gen) => (
+                    <TouchableOpacity
+                      key={gen}
+                      style={[
+                        styles.chipOption,
+                        selectedGender === gen && styles.chipOptionActive,
+                      ]}
+                      onPress={() => setSelectedGender(gen)}
+                    >
+                      <Text
+                        style={[
+                          styles.chipOptionText,
+                          selectedGender === gen && styles.chipOptionTextActive,
+                        ]}
+                      >
+                        {gen}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* ENCABEZADO DE RESULTADOS */}
@@ -353,10 +430,10 @@ export default function SpeciesScreen({ onProfilePress }) {
             selectedAge !== 'Todos' ||
             selectedGender !== 'Todos' ||
             searchQuery !== '') && (
-              <TouchableOpacity onPress={resetFilters}>
-                <Text style={styles.resetFiltersText}>Limpiar filtros</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity onPress={resetFilters}>
+              <Text style={styles.resetFiltersText}>Limpiar filtros</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* LISTADO DE TARJETAS */}
@@ -517,7 +594,7 @@ export default function SpeciesScreen({ onProfilePress }) {
                 const pet = selectedPet;
                 setSelectedPet(null);
                 router.push({
-                  pathname: '/AdoptionForm',
+                  pathname: '/drawer/Index',
                   params: { petId: pet?.id },
                 });
               }}
@@ -543,29 +620,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.surface,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  navButton: {
-    padding: 4,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -618,54 +672,96 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  /* FILTROS POR CHIPS */
-  filtersSection: {
+  /* FILTROS DESPLEGABLES */
+  dropdownSection: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    padding: 12,
     marginBottom: 16,
-    gap: 10,
+    overflow: 'hidden',
   },
-  filterGroupTitle: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  chipFilterRow: {
+  dropdownHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
   },
-  chipLabel: {
+  dropdownHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropdownHeaderText: {
     color: COLORS.onSurface,
-    fontSize: 11,
-    fontWeight: '600',
-    width: 60,
+    fontSize: 13,
+    fontWeight: '700',
   },
-  chipRowContainer: {
+  activeBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  dropdownContent: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
+    gap: 8,
+    paddingTop: 10,
+  },
+  subFilterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    marginRight: 6,
-  },
-  chipActive: {
-    backgroundColor: 'rgba(124, 58, 237, 0.25)',
     borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  subFilterHeaderActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+  },
+  subFilterTitle: {
+    color: COLORS.onSurface,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  chipOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  chipOptionActive: {
+    backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
-  chipText: {
+  chipOptionText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
   },
-  chipTextActive: {
+  chipOptionTextActive: {
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
@@ -957,5 +1053,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 13,
   },
-}
-);
+});

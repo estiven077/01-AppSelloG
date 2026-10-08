@@ -26,7 +26,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 35,
   },
 
-  /* ================= ENCABEZADO ================= */
+  /*     ENCABEZADO     */
   header: {
     paddingHorizontal: 20,
     paddingTop: 28,
@@ -67,7 +67,7 @@ export const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  /* ================= ESTADÍSTICAS ================= */
+  /*     ESTADÍSTICAS     */
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -93,7 +93,7 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  /* ================= SECCIONES (pantalla principal) ================= */
+  /*     SECCIONES (pantalla principal)     */
   sectionContainer: {
     paddingHorizontal: 16,
     marginBottom: 22,
@@ -120,7 +120,7 @@ export const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  /* ================= BUSCADOR Y FILTROS ================= */
+  /*     BUSCADOR Y FILTROS     */
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -395,7 +395,7 @@ export const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  /* Encabezado de las tarjetas dentro del modal */
+  /*     Encabezado de las tarjetas dentro del moda      */
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -403,40 +403,81 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  /* Tipo de situación */
-  typeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 8,
-  },
-  typeOption: {
-    flexBasis: "30%",
-    flexGrow: 1,
-    backgroundColor: COLORS.cardBg,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  typeOptionWide: {
-    flexBasis: "100%",
-  },
-  typeOptionSelected: {
-    borderColor: COLORS.primaryContainer,
-    backgroundColor: "rgba(147, 51, 234, 0.1)",
-  },
-  typeLabel: {
-    color: COLORS.onSurface,
-    fontSize: 12,
-    fontWeight: "600",
-    textAlign: "center",
-  },
+  /*     Tipo de situación     */
+  typeList: {
+  marginTop: 4,
+},
 
-  /* Animal */
+typeItem: {
+  minHeight: 58,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingVertical: 9,
+  paddingHorizontal: 8,
+
+  borderBottomWidth: 1,
+  borderBottomColor: "rgba(255, 255, 255, 0.08)",
+},
+
+typeItemSelected: {
+  backgroundColor: "rgba(168, 85, 247, 0.10)",
+  borderRadius: 12,
+  borderBottomWidth: 0,
+  marginVertical: 2,
+},
+
+typeItemLast: {
+  borderBottomWidth: 0,
+},
+
+typeItemLeft: {
+  flexDirection: "row",
+  alignItems: "center",
+  flex: 1,
+},
+
+typeIcon: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(255, 255, 255, 0.06)",
+  marginRight: 12,
+},
+
+typeIconSelected: {
+  backgroundColor: "rgba(168, 85, 247, 0.18)",
+},
+
+typeLabel: {
+  color: COLORS.onSurface,
+  fontSize: 14,
+  fontWeight: "500",
+},
+
+typeLabelSelected: {
+  color: COLORS.primary,
+  fontWeight: "600",
+},
+
+radio: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  borderWidth: 2,
+  borderColor: "rgba(255, 255, 255, 0.25)",
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+radioSelected: {
+  backgroundColor: COLORS.primary,
+  borderColor: COLORS.primary,
+},
+
+  /*      Animal      */
   animalTitle: {
     color: COLORS.onSurface,
     fontSize: 16,
@@ -503,7 +544,7 @@ export const styles = StyleSheet.create({
     height: 100,
   },
 
-  /* Botón registrar */
+  /*      Botón registrar      */
   saveButton: {
     flexDirection: "row",
     justifyContent: "center",

@@ -1,156 +1,255 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
+  import React, { useState, useEffect } from "react";
 
-import { useRouter, useNavigation } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+  import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    Alert,
+    ActivityIndicator,
+    Platform,
+  } from "react-native";
 
-import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+  import { useRouter } from "expo-router";
+  import { Ionicons } from "@expo/vector-icons";
 
-// =====================================================
-// COLORES
-// =====================================================
+  import * as SecureStore from "expo-secure-store";
+  import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const COLORS = {
-  background: "#0A0C0E",
-  surface: "#12161A",
-  activePurple: "#A855F7",
-  textLight: "#F8FAFC",
-  textMuted: "#64748B",
-};
 
-// =====================================================
-// URL DE TU API DE LARAVEL
-// =====================================================
+  // COLORES
 
-// Cuando tengas tu API real, cambia esta URL.
-const API_URL = "https://tu-dominio-laravel.com";
 
-// =====================================================
-// IMAGEN POR DEFECTO
-// =====================================================
-
-const DEFAULT_AVATAR = "https://i.pravatar.cc/150?img=12";
-
-// =====================================================
-// COMPONENTE DRAWER MENU
-// =====================================================
-
-export default function DrawerMenu() {
-  // Router de Expo Router
-  const router = useRouter();
-
-  // Navigation pertenece al Drawer de Expo Router
-  const navigation = useNavigation();
-
-  // ===================================================
-  // ESTADOS
-  // ===================================================
-
-  // Indica si estamos cargando la información
-  const [loading, setLoading] = useState(true);
-
-  // Indica si existe una sesión iniciada
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Información del usuario
-  const [user, setUser] = useState({
-    name: "",
-    email: "",
-    avatar: "",
-  });
-
-  // ===================================================
-  // COMPROBAR SESIÓN AL CARGAR EL MENÚ
-  // ===================================================
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  // ===================================================
-  // OBTENER TOKEN
-  // ===================================================
-
-  const getToken = async () => {
-    try {
-      // En web usamos AsyncStorage
-      if (Platform.OS === "web") {
-        return await AsyncStorage.getItem("user_token");
-      }
-
-      // En Android / iOS usamos SecureStore
-      return await SecureStore.getItemAsync("user_token");
-    } catch (error) {
-      console.error("Error al obtener token:", error);
-      return null;
-    }
+  const COLORS = {
+    background: "#0A0C0E",
+    surface: "#12161A",
+    activePurple: "#A855F7",
+    textLight: "#F8FAFC",
+    textMuted: "#64748B",
   };
 
-  // ===================================================
-  // ELIMINAR TOKEN
-  // ===================================================
+  const API_URL = "https://tu-dominio-laravel.com";
 
-  const removeToken = async () => {
-    try {
-      if (Platform.OS === "web") {
-        await AsyncStorage.removeItem("user_token");
-      } else {
-        await SecureStore.deleteItemAsync("user_token");
-      }
-    } catch (error) {
-      console.error("Error al eliminar token:", error);
-    }
-  };
+  const DEFAULT_AVATAR = "https://i.pravatar.cc/150?img=12";
 
-  // ===================================================
-  // COMPROBAR ESTADO DE AUTENTICACIÓN
-  // ===================================================
+  // DRAWER MENU
 
-  const checkAuthStatus = async () => {
-    try {
-      setLoading(true);
+  export default function DrawerMenu() {
 
-      // Obtener token guardado
-      const token = await getToken();
+    // ROUTER
 
-      // =================================================
-      // SI EXISTE TOKEN
-      // =================================================
+    const router = useRouter();
 
-      if (token) {
-        // Buscar información del usuario guardada
-        const savedUser = await AsyncStorage.getItem("user_data");
+    // FUNCIÓN PARA CERRAR EL MENÚ
 
-        if (savedUser) {
-          // Si existen datos guardados, los usamos
-          setUser(JSON.parse(savedUser));
-        } else {
-          // Datos de prueba mientras responde el backend
-          setUser({
-            name: "Carlos Mendoza",
-            email: "carlos.guardian@email.com",
-            avatar: DEFAULT_AVATAR,
-          });
+
+
+    const closeMenu = () => {
+      router.back();
+    };
+
+
+    // ESTADOS
+
+
+    // Indica si se está comprobando la sesión
+    const [loading, setLoading] = useState(true);
+
+    // Indica si el usuario está autenticado
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Información del usuario
+    const [user, setUser] = useState({
+      name: "",
+      email: "",
+      avatar: "",
+    });
+
+    // COMPROBAR SESIÓN AL CARGAR
+
+
+    useEffect(() => {
+      checkAuthStatus();
+    }, []);
+
+
+    // OBTENER TOKEN
+
+
+    const getToken = async () => {
+      try {
+
+        // WEB
+
+
+        if (Platform.OS === "web") {
+          return await AsyncStorage.getItem("user_token");
         }
 
-        setIsLoggedIn(true);
+
+        // ANDROID / IOS
+
+        return await SecureStore.getItemAsync("user_token");
+      } catch (error) {
+        console.error("Error al obtener el token:", error);
+        return null;
       }
+    };
 
-      // =================================================
-      // SI NO EXISTE TOKEN
-      // =================================================
+    // ELIMINAR TOKEN
 
-      else {
+
+    const removeToken = async () => {
+      try {
+
+        // WEB
+
+
+        if (Platform.OS === "web") {
+          await AsyncStorage.removeItem("user_token");
+        }
+
+
+        // ANDROID / IOS
+
+
+        else {
+          await SecureStore.deleteItemAsync("user_token");
+        }
+      } catch (error) {
+        console.error("Error al eliminar el token:", error);
+      }
+    };
+
+
+    // COMPROBAR ESTADO DE AUTENTICACIÓN
+
+
+    const checkAuthStatus = async () => {
+      try {
+        setLoading(true);
+
+        // Obtener token
+        const token = await getToken();
+
+
+        // EXISTE TOKEN
+
+
+        if (token) {
+          // Buscar información del usuario
+          const savedUser = await AsyncStorage.getItem("user_data");
+
+
+          // SI EXISTEN DATOS GUARDADOS
+
+
+          if (savedUser) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+
+              setUser({
+                name: parsedUser.name || "",
+                email: parsedUser.email || "",
+                avatar: parsedUser.avatar || DEFAULT_AVATAR,
+              });
+            } catch (error) {
+              console.error(
+                "Error al convertir user_data:",
+                error
+              );
+
+              setUser({
+                name: "Usuario",
+                email: "",
+                avatar: DEFAULT_AVATAR,
+              });
+            }
+          }
+
+
+          // SI NO EXISTEN DATOS GUARDADOS
+
+
+          else {
+            // Datos temporales mientras conectamos Laravel
+            setUser({
+              name: "Carlos Mendoza",
+              email: "carlos.guardian@email.com",
+              avatar: DEFAULT_AVATAR,
+            });
+          }
+
+          setIsLoggedIn(true);
+        }
+
+
+        // NO EXISTE TOKEN
+
+
+        else {
+          setIsLoggedIn(false);
+
+          setUser({
+            name: "",
+            email: "",
+            avatar: "",
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Error al verificar el estado de autenticación:",
+          error
+        );
+
+        setIsLoggedIn(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+    // CERRAR SESIÓN
+
+
+    const handleLogout = async () => {
+      try {
+        setLoading(true);
+
+        // Obtener token
+        const token = await getToken();
+
+
+        // PETICIÓN AL BACKEND
+
+
+        if (token) {
+          try {
+            await fetch(`${API_URL}/logout`, {
+              method: "POST",
+
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+          } catch (error) {
+            console.warn(
+              "Servidor inaccesible, limpiando datos locales."
+            );
+          }
+        }
+
+        // LIMPIAR DATOS LOCALES
+
+
+        await removeToken();
+
+        await AsyncStorage.removeItem("user_data");
+
+        // Actualizar estado
         setIsLoggedIn(false);
 
         setUser({
@@ -158,169 +257,232 @@ export default function DrawerMenu() {
           email: "",
           avatar: "",
         });
+
+        // IR AL LOGIN
+
+
+        router.replace("/(auth)/login");
+
+
+        // MENSAJE
+
+
+        Alert.alert(
+          "Sesión Cerrada",
+          "Has salido de Sello Guardián de forma segura."
+        );
+      } catch (error) {
+        console.error("Error en Logout:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(
-        "Error al verificar el estado de la autenticación:",
-        error
-      );
+    };
 
-      setIsLoggedIn(false);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // ===================================================
-  // CERRAR SESIÓN
-  // ===================================================
+    // CARGANDO
 
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
 
-      // Obtener token
-      const token = await getToken();
-
-      // =================================================
-      // AVISAR AL BACKEND
-      // =================================================
-
-      if (token) {
-        try {
-          await fetch(`${API_URL}/logout`, {
-            method: "POST",
-
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
+    if (loading) {
+      return (
+        <View
+          style={[
+            styles.container,
+            {
+              justifyContent: "center",
+              alignItems: "center",
             },
-          });
-        } catch (error) {
-          // Si el servidor todavía no está conectado,
-          // igualmente limpiamos la sesión local.
-          console.warn(
-            "Servidor inaccesible, limpiando datos locales."
-          );
-        }
-      }
-
-      // =================================================
-      // LIMPIAR SESIÓN LOCAL
-      // =================================================
-
-      await removeToken();
-
-      await AsyncStorage.removeItem("user_data");
-
-      setIsLoggedIn(false);
-
-      setUser({
-        name: "",
-        email: "",
-        avatar: "",
-      });
-
-      // =================================================
-      // CERRAR DRAWER
-      // =================================================
-
-      navigation.closeDrawer();
-
-      // =================================================
-      // IR AL LOGIN
-      // =================================================
-
-      router.replace("/(auth)/login");
-
-      // =================================================
-      // MENSAJE
-      // =================================================
-
-      Alert.alert(
-        "Sesión Cerrada",
-        "Has salido de Sello Guardián de forma segura."
+          ]}
+        >
+          <ActivityIndicator
+            size="large"
+            color={COLORS.activePurple}
+          />
+        </View>
       );
-    } catch (error) {
-      console.error("Error en Logout:", error);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  // ===================================================
-  // PANTALLA DE CARGA
-  // ===================================================
 
-  if (loading) {
+    // MENÚ COMPLETO
+
+
     return (
-      <View
-        style={[
-          styles.container,
-          {
-            justifyContent: "center",
-            alignItems: "center",
-          },
-        ]}
-      >
-        <ActivityIndicator
-          size="large"
-          color={COLORS.activePurple}
-        />
-      </View>
-    );
-  }
+      <View style={styles.container}>
+        <View style={styles.menuContainer}>
 
-  // ===================================================
-  // MENÚ PRINCIPAL
-  // ===================================================
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.menuContainer}>
 
-        {/* =================================================
-            PERFIL
-        ================================================= */}
+          <View style={styles.header}>
+            {isLoggedIn ? (
+              <TouchableOpacity
+                style={styles.userCard}
+                activeOpacity={0.7}
+                onPress={() => {
+                  // Cerrar el menú
+                  closeMenu();
 
-        <View style={styles.header}>
-          {isLoggedIn ? (
-            <TouchableOpacity
-              style={styles.userCard}
-              activeOpacity={0.7}
-              onPress={() => {
-                // Cerrar Drawer
-                navigation.closeDrawer();
-
-                // Ir al perfil
-                router.push("/Perfil");
-              }}
-            >
-              {/* FOTO DEL USUARIO */}
-
-              <Image
-                source={{
-                  uri: user.avatar || DEFAULT_AVATAR,
+                  // Ir al perfil
+                  router.push("/Perfil");
                 }}
-                style={styles.avatar}
-              />
+              >
+                {/* AVATAR */}
 
-              {/* INFORMACIÓN DEL USUARIO */}
+                <Image
+                  source={{
+                    uri: user.avatar || DEFAULT_AVATAR,
+                  }}
+                  style={styles.avatar}
+                />
 
-              <View style={styles.userTextContainer}>
-                <Text
-                  style={styles.userName}
-                  numberOfLines={1}
-                >
-                  {user.name}
+                {/* INFORMACIÓN DEL USUARIO */}
+
+                <View style={styles.userTextContainer}>
+                  <Text
+                    style={styles.userName}
+                    numberOfLines={1}
+                  >
+                    {user.name}
+                  </Text>
+
+                  <Text
+                    style={styles.userEmail}
+                    numberOfLines={1}
+                  >
+                    {user.email}
+                  </Text>
+                </View>
+
+                {/* FLECHA */}
+
+                <Ionicons
+                  name="chevron-forward-outline"
+                  size={20}
+                  color={COLORS.textMuted}
+                />
+              </TouchableOpacity>
+            ) : (
+              /* =================================================
+                MODO INVITADO
+              ================================================= */
+
+              <View style={styles.guestContainer}>
+                {/* ICONO */}
+
+                <View style={styles.guestAvatarBg}>
+                  <Ionicons
+                    name="person"
+                    size={26}
+                    color={COLORS.textMuted}
+                  />
+                </View>
+
+                {/* TEXTO */}
+
+                <Text style={styles.guestTitle}>
+                  Modo Invitado
                 </Text>
 
-                <Text
-                  style={styles.userEmail}
-                  numberOfLines={1}
+                {/* BOTÓN LOGIN */}
+
+                <TouchableOpacity
+                  style={styles.loginButton}
+                  onPress={() => {
+                    // Cerrar menú
+                    closeMenu();
+
+                    // Ir al login
+                    router.push("/(auth)/login");
+                  }}
                 >
-                  {user.email}
+                  <Ionicons
+                    name="log-in-outline"
+                    size={18}
+                    color={COLORS.textLight}
+                  />
+
+                  <Text style={styles.loginButtonText}>
+                    Iniciar Sesión / Registro
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* =================================================
+              OPCIONES DEL MENÚ
+          ================================================= */}
+
+          <View style={styles.options}>
+
+            {/* =================================================
+                MIS DENUNCIAS Y SEGUIMIENTOS
+            ================================================= */}
+
+            {isLoggedIn && (
+              <TouchableOpacity
+                style={styles.link}
+                activeOpacity={0.7}
+                onPress={() => {
+                  router.push("/drawer/MisCasos");
+                }}
+              >
+                {/* ICONO */}
+
+                <Ionicons
+                  name="folder-open-outline"
+                  size={22}
+                  color={COLORS.textLight}
+                />
+
+                {/* TEXTO */}
+
+                <View style={styles.linkContent}>
+                  <Text style={styles.linkText}>
+                    Mis Denuncias y Seguimientos
+                  </Text>
+
+                  <Text style={styles.linkDescription}>
+                    Consulta tus casos y su estado
+                  </Text>
+                </View>
+
+                {/* FLECHA */}
+
+                <Ionicons
+                  name="chevron-forward-outline"
+                  size={18}
+                  color={COLORS.textMuted}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* =================================================
+                SOBRE SELLO GUARDIÁN
+            ================================================= */}
+
+            <TouchableOpacity
+              style={styles.link}
+              activeOpacity={0.7}
+              onPress={() => {
+                router.push("/drawer/SobreNosotros");
+              }}
+            >
+              {/* ICONO */}
+
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={COLORS.textLight}
+              />
+
+              {/* TEXTO */}
+
+              <View style={styles.linkContent}>
+                <Text style={styles.linkText}>
+                  Sobre Sello Guardián
+                </Text>
+
+                <Text style={styles.linkDescription}>
+                  Historia, misión y visión
                 </Text>
               </View>
 
@@ -328,85 +490,43 @@ export default function DrawerMenu() {
 
               <Ionicons
                 name="chevron-forward-outline"
-                size={20}
+                size={18}
                 color={COLORS.textMuted}
               />
             </TouchableOpacity>
-          ) : (
-            // =================================================
-            // MODO INVITADO
-            // =================================================
 
-            <View style={styles.guestContainer}>
-              <View style={styles.guestAvatarBg}>
-                <Ionicons
-                  name="person"
-                  size={26}
-                  color={COLORS.textMuted}
-                />
-              </View>
+            {/* =================================================
+                CONFIGURACIÓN
+            ================================================= */}
 
-              <Text style={styles.guestTitle}>
-                Modo Invitado
-              </Text>
-
-              <TouchableOpacity
-                style={styles.loginButton}
-                onPress={() => {
-                  // Cerrar Drawer
-                  navigation.closeDrawer();
-
-                  // Ir al login
-                  router.push("/(auth)/login");
-                }}
-              >
-                <Ionicons
-                  name="log-in-outline"
-                  size={18}
-                  color={COLORS.textLight}
-                />
-
-                <Text style={styles.loginButtonText}>
-                  Iniciar Sesión / Registro
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* =================================================
-            OPCIONES DEL MENÚ
-        ================================================= */}
-
-        <View style={styles.options}>
-
-          {/* =================================================
-              MIS DENUNCIAS Y SEGUIMIENTOS
-          ================================================= */}
-
-          {isLoggedIn && (
             <TouchableOpacity
               style={styles.link}
+              activeOpacity={0.7}
               onPress={() => {
-                // Ir a MisCasos
-                router.push("/drawer/MisCasos");
+                router.push("/drawer/settings");
               }}
             >
+              {/* ICONO */}
+
               <Ionicons
-                name="folder-open-outline"
+                name="settings-outline"
                 size={22}
                 color={COLORS.textLight}
               />
 
+              {/* TEXTO */}
+
               <View style={styles.linkContent}>
                 <Text style={styles.linkText}>
-                  Mis Denuncias y Seguimientos
+                  Configuración o Ajustes
                 </Text>
 
                 <Text style={styles.linkDescription}>
-                  Consulta tus casos y su estado
+                  Preferencias y notificaciones
                 </Text>
               </View>
+
+              {/* FLECHA */}
 
               <Ionicons
                 name="chevron-forward-outline"
@@ -414,362 +534,308 @@ export default function DrawerMenu() {
                 color={COLORS.textMuted}
               />
             </TouchableOpacity>
-          )}
 
-          {/* =================================================
-              SOBRE NOSOTROS
-          ================================================= */}
+            {/* =================================================
+                PRIVACIDAD Y CONTACTO
+            ================================================= */}
 
-          <TouchableOpacity
-            style={styles.link}
-            onPress={() => {
-              router.push("/drawer/SobreNosotros");
-            }}
-          >
-            <Ionicons
-              name="information-circle-outline"
-              size={22}
-              color={COLORS.textLight}
-            />
-
-            <View style={styles.linkContent}>
-              <Text style={styles.linkText}>
-                Sobre Sello Guardián
-              </Text>
-
-              <Text style={styles.linkDescription}>
-                Historia, misión y visión
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={18}
-              color={COLORS.textMuted}
-            />
-          </TouchableOpacity>
-
-          {/* =================================================
-              CONFIGURACIÓN
-          ================================================= */}
-
-          <TouchableOpacity
-            style={styles.link}
-            onPress={() => {
-              router.push("/drawer/settings");
-            }}
-          >
-            <Ionicons
-              name="settings-outline"
-              size={22}
-              color={COLORS.textLight}
-            />
-
-            <View style={styles.linkContent}>
-              <Text style={styles.linkText}>
-                Configuración o Ajustes
-              </Text>
-
-              <Text style={styles.linkDescription}>
-                Preferencias y notificaciones
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={18}
-              color={COLORS.textMuted}
-            />
-          </TouchableOpacity>
-
-          {/* =================================================
-              PRIVACIDAD
-          ================================================= */}
-
-          <TouchableOpacity
-            style={styles.link}
-            onPress={() => {
-              router.push("/drawer/Privacidad");
-            }}
-          >
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={22}
-              color={COLORS.textLight}
-            />
-
-            <View style={styles.linkContent}>
-              <Text style={styles.linkText}>
-                Privacidad y Contacto
-              </Text>
-
-              <Text style={styles.linkDescription}>
-                Términos, privacidad y soporte
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={18}
-              color={COLORS.textMuted}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* =================================================
-            FOOTER
-        ================================================= */}
-
-        <View style={styles.footer}>
-
-          {/* =================================================
-              CERRAR SESIÓN
-          ================================================= */}
-
-          {isLoggedIn && (
             <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
+              style={styles.link}
+              activeOpacity={0.7}
+              onPress={() => {
+                router.push("/drawer/Privacidad");
+              }}
             >
+              {/* ICONO */}
+
               <Ionicons
-                name="log-out-outline"
+                name="shield-checkmark-outline"
                 size={22}
-                color="#EF4444"
+                color={COLORS.textLight}
               />
 
-              <Text style={styles.logoutText}>
-                Cerrar Sesión
-              </Text>
+              {/* TEXTO */}
+
+              <View style={styles.linkContent}>
+                <Text style={styles.linkText}>
+                  Privacidad y Contacto
+                </Text>
+
+                <Text style={styles.linkDescription}>
+                  Términos, privacidad y soporte
+                </Text>
+              </View>
+
+              {/* FLECHA */}
+
+              <Ionicons
+                name="chevron-forward-outline"
+                size={18}
+                color={COLORS.textMuted}
+              />
             </TouchableOpacity>
-          )}
+          </View>
+
+          {/* =================================================
+              FOOTER
+          ================================================= */}
+
+          <View style={styles.footer}>
+
+            {/* =================================================
+                CERRAR SESIÓN
+            ================================================= */}
+
+            {isLoggedIn && (
+              <TouchableOpacity
+                style={styles.logoutButton}
+                activeOpacity={0.7}
+                onPress={handleLogout}
+              >
+                {/* ICONO */}
+
+                <Ionicons
+                  name="log-out-outline"
+                  size={22}
+                  color="#EF4444"
+                />
+
+                {/* TEXTO */}
+
+                <Text style={styles.logoutText}>
+                  Cerrar Sesión
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
-    </View>
-  );
-}
+    );
+  }
 
-// =====================================================
-// ESTILOS
-// =====================================================
+  // =====================================================
+  // ESTILOS
+  // =====================================================
 
-const styles = StyleSheet.create({
-  // ===================================================
-  // CONTENEDOR PRINCIPAL
-  // ===================================================
+  const styles = StyleSheet.create({
 
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+    // ===================================================
+    // CONTENEDOR PRINCIPAL
+    // ===================================================
 
-  // ===================================================
-  // CONTENEDOR DEL MENÚ
-  // ===================================================
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
 
-  menuContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-    justifyContent: "space-between",
-  },
+    // ===================================================
+    // CONTENEDOR DEL MENÚ
+    // ===================================================
 
-  // ===================================================
-  // HEADER
-  // ===================================================
+    menuContainer: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingTop: 50,
+      paddingBottom: 20,
+      justifyContent: "space-between",
+    },
 
-  header: {
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.06)",
-  },
+    // ===================================================
+    // HEADER
+    // ===================================================
 
-  // ===================================================
-  // TARJETA DEL USUARIO
-  // ===================================================
+    header: {
+      paddingBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(255,255,255,0.06)",
+    },
 
-  userCard: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    // ===================================================
+    // TARJETA USUARIO
+    // ===================================================
 
-  // ===================================================
-  // AVATAR
-  // ===================================================
+    userCard: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
 
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: COLORS.activePurple,
-  },
+    // ===================================================
+    // AVATAR
+    // ===================================================
 
-  // ===================================================
-  // INFORMACIÓN DEL USUARIO
-  // ===================================================
+    avatar: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      borderWidth: 2,
+      borderColor: COLORS.activePurple,
+    },
 
-  userTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
+    // ===================================================
+    // CONTENEDOR TEXTO USUARIO
+    // ===================================================
 
-  // ===================================================
-  // NOMBRE
-  // ===================================================
+    userTextContainer: {
+      marginLeft: 12,
+      flex: 1,
+    },
 
-  userName: {
-    color: COLORS.textLight,
-    fontWeight: "bold",
-    fontSize: 15,
-  },
+    // ===================================================
+    // NOMBRE USUARIO
+    // ===================================================
 
-  // ===================================================
-  // EMAIL
-  // ===================================================
+    userName: {
+      color: COLORS.textLight,
+      fontWeight: "bold",
+      fontSize: 15,
+    },
 
-  userEmail: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
+    // ===================================================
+    // EMAIL USUARIO
+    // ===================================================
 
-  // ===================================================
-  // INVITADO
-  // ===================================================
+    userEmail: {
+      color: COLORS.textMuted,
+      fontSize: 12,
+      marginTop: 2,
+    },
 
-  guestContainer: {
-    alignItems: "center",
-    paddingVertical: 5,
-  },
+    // ===================================================
+    // CONTENEDOR INVITADO
+    // ===================================================
 
-  // ===================================================
-  // ICONO DEL INVITADO
-  // ===================================================
+    guestContainer: {
+      alignItems: "center",
+      paddingVertical: 5,
+    },
 
-  guestAvatarBg: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
+    // ===================================================
+    // FONDO AVATAR INVITADO
+    // ===================================================
 
-  // ===================================================
-  // TÍTULO INVITADO
-  // ===================================================
+    guestAvatarBg: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: "rgba(255,255,255,0.04)",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 8,
+    },
 
-  guestTitle: {
-    color: COLORS.textLight,
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
+    // ===================================================
+    // TITULO INVITADO
+    // ===================================================
 
-  // ===================================================
-  // BOTÓN LOGIN
-  // ===================================================
+    guestTitle: {
+      color: COLORS.textLight,
+      fontSize: 14,
+      fontWeight: "600",
+      marginBottom: 10,
+    },
 
-  loginButton: {
-    backgroundColor: COLORS.activePurple,
-    paddingVertical: 9,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-  },
+    // ===================================================
+    // BOTÓN LOGIN
+    // ===================================================
 
-  // ===================================================
-  // TEXTO LOGIN
-  // ===================================================
+    loginButton: {
+      backgroundColor: COLORS.activePurple,
+      paddingVertical: 9,
+      paddingHorizontal: 15,
+      borderRadius: 20,
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+    },
 
-  loginButtonText: {
-    color: COLORS.textLight,
-    fontSize: 12,
-    fontWeight: "bold",
-    marginLeft: 7,
-  },
+    // ===================================================
+    // TEXTO BOTÓN LOGIN
+    // ===================================================
 
-  // ===================================================
-  // OPCIONES
-  // ===================================================
+    loginButtonText: {
+      color: COLORS.textLight,
+      fontSize: 12,
+      fontWeight: "bold",
+      marginLeft: 7,
+    },
 
-  options: {
-    flex: 1,
-    marginTop: 20,
-  },
+    // ===================================================
+    // OPCIONES
+    // ===================================================
 
-  // ===================================================
-  // LINK
-  // ===================================================
+    options: {
+      flex: 1,
+      marginTop: 20,
+    },
 
-  link: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-  },
+    // ===================================================
+    // LINK
+    // ===================================================
 
-  // ===================================================
-  // CONTENIDO DEL LINK
-  // ===================================================
+    link: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 13,
+    },
 
-  linkContent: {
-    flex: 1,
-    marginLeft: 15,
-  },
+    // ===================================================
+    // CONTENIDO LINK
+    // ===================================================
 
-  // ===================================================
-  // TEXTO DEL LINK
-  // ===================================================
+    linkContent: {
+      flex: 1,
+      marginLeft: 15,
+    },
 
-  linkText: {
-    color: COLORS.textLight,
-    fontSize: 14,
-    fontWeight: "500",
-  },
+    // ===================================================
+    // TEXTO LINK
+    // ===================================================
 
-  // ===================================================
-  // DESCRIPCIÓN
-  // ===================================================
+    linkText: {
+      color: COLORS.textLight,
+      fontSize: 14,
+      fontWeight: "500",
+    },
 
-  linkDescription: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    marginTop: 3,
-  },
+    // ===================================================
+    // DESCRIPCIÓN LINK
+    // ===================================================
 
-  // ===================================================
-  // FOOTER
-  // ===================================================
+    linkDescription: {
+      color: COLORS.textMuted,
+      fontSize: 11,
+      marginTop: 3,
+    },
 
-  footer: {
-    justifyContent: "flex-end",
-  },
+    // ===================================================
+    // FOOTER
+    // ===================================================
 
-  // ===================================================
-  // BOTÓN LOGOUT
-  // ===================================================
+    footer: {
+      justifyContent: "flex-end",
+    },
 
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
-  },
+    // ===================================================
+    // BOTÓN CERRAR SESIÓN
+    // ===================================================
 
-  // ===================================================
-  // TEXTO LOGOUT
-  // ===================================================
+    logoutButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 14,
+      borderTopWidth: 1,
+      borderTopColor: "rgba(255,255,255,0.06)",
+    },
 
-  logoutText: {
-    color: "#EF4444",
-    marginLeft: 15,
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-});
+    // ===================================================
+    // TEXTO CERRAR SESIÓN
+    // ===================================================
+
+    logoutText: {
+      color: "#EF4444",
+      marginLeft: 15,
+      fontWeight: "bold",
+      fontSize: 15,
+    },
+  });
