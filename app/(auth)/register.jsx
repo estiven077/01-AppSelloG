@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import {
   View,
   Text,
@@ -15,6 +14,7 @@ import {
   Dimensions,
 } from 'react-native';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
@@ -31,9 +31,10 @@ const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#8B5CF6',
-  primaryDark: '#1E1B4B',
+  primaryDark: '#8B5CF6',
+  background: '#0d0d0d', // Fondo negro/oscuro para la safe area superior
 
-  cardBg: '#FFFFFF',
+  cardBg: '#0F172A',
   cardText: '#1E1B4B',
   cardSubtext: '#6B7280',
 
@@ -53,7 +54,7 @@ const COLORS = {
 // ======================================================
 
 const validationSchema = Yup.object().shape({
-  rol: Yup.string().required('Selecciona un rol'),
+  rol: Yup.string().required('Selecciona un '),
 
   // ---------------- USUARIO ----------------
   tipoDocumento: Yup.string().when('rol', {
@@ -140,7 +141,6 @@ const validationSchema = Yup.object().shape({
 
 // ======================================================
 // COMPONENTES REUTILIZABLES
-// (están fuera de Register para que el teclado no se cierre)
 // ======================================================
 
 const Field = ({ formik, name, label, icon, placeholder, ...inputProps }) => {
@@ -214,7 +214,6 @@ const PasswordField = ({ formik, name, label, placeholder }) => {
   );
 };
 
-// Tarjeta de rol: morada si está seleccionada, blanca si no
 const RoleCard = ({ icon, title, subtitle, selected, onPress }) => (
   <TouchableOpacity
     style={[styles.roleCard, selected && styles.roleCardSelected]}
@@ -243,19 +242,13 @@ export default function Register() {
   const formik = useFormik({
     initialValues: {
       rol: '',
-
-      // USUARIO
       tipoDocumento: '',
       documento: '',
       nombre: '',
-
-      // FUNDACIÓN
       nombreFundacion: '',
       representanteLegal: '',
       telefono: '',
       ciudadDireccion: '',
-
-      // COMUNES
       email: '',
       password: '',
       confirmarPassword: '',
@@ -281,7 +274,6 @@ export default function Register() {
     },
   });
 
-  // Cambiar rol y limpiar los campos del rol anterior
   const cambiarRol = (value) => {
     formik.setValues({
       ...formik.values,
@@ -303,11 +295,11 @@ export default function Register() {
   const errorTerminos = formik.touched.terminos && formik.errors.terminos;
 
   return (
-    <View style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar
         barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
+        backgroundColor={COLORS.background}
+        translucent={false}
       />
 
       <KeyboardAvoidingView
@@ -361,9 +353,7 @@ export default function Register() {
               {esFundacion ? 'Registrar fundación' : 'Crear cuenta'}
             </Text>
 
-            {/* ==================================================
-                ROL (TARJETAS)
-            ================================================== */}
+            {/* ROL (TARJETAS) */}
             <View style={styles.group}>
               <Text style={styles.label}>Soy:</Text>
 
@@ -388,9 +378,7 @@ export default function Register() {
               {errorRol && <Text style={styles.error}>{formik.errors.rol}</Text>}
             </View>
 
-            {/* ==================================================
-                CAMPOS DE USUARIO
-            ================================================== */}
+            {/* CAMPOS DE USUARIO */}
             {formik.values.rol === 'usuario' && (
               <>
                 <View style={styles.group}>
@@ -464,9 +452,7 @@ export default function Register() {
               </>
             )}
 
-            {/* ==================================================
-                CAMPOS DE FUNDACIÓN
-            ================================================== */}
+            {/* CAMPOS DE FUNDACIÓN */}
             {esFundacion && (
               <>
                 <Field
@@ -508,9 +494,7 @@ export default function Register() {
               </>
             )}
 
-            {/* ==================================================
-                CAMPOS COMUNES
-            ================================================== */}
+            {/* CAMPOS COMUNES */}
             <Field
               formik={formik}
               name="email"
@@ -536,9 +520,7 @@ export default function Register() {
               placeholder="Repetir contraseña"
             />
 
-            {/* ==================================================
-                TÉRMINOS Y CONDICIONES
-            ================================================== */}
+            {/* TÉRMINOS Y CONDICIONES */}
             <TouchableOpacity
               style={styles.remember}
               onPress={() => {
@@ -572,9 +554,7 @@ export default function Register() {
               </Text>
             )}
 
-            {/* ==================================================
-                BOTÓN CREAR CUENTA
-            ================================================== */}
+            {/* BOTÓN CREAR CUENTA */}
             <TouchableOpacity
               style={styles.registerButton}
               onPress={formik.handleSubmit}
@@ -599,7 +579,7 @@ export default function Register() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -610,7 +590,7 @@ export default function Register() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0d0d0d',
   },
 
   keyboard: {
@@ -621,7 +601,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  // ---------------- ENCABEZADO CON IMAGEN ----------------
   topHeader: {
     width: '100%',
     height: 300,
@@ -660,7 +639,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
 
-  // ---------------- CURVA ----------------
   svgContainer: {
     width: '100%',
     height: 50,
@@ -669,7 +647,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  // ---------------- TARJETA BLANCA ----------------
   cardContainer: {
     width: '100%',
     backgroundColor: COLORS.cardBg,
@@ -685,7 +662,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  // ---------------- ROLES ----------------
   roleRow: {
     flexDirection: 'row',
     gap: 12,
@@ -725,7 +701,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ---------------- INPUTS ----------------
   group: {
     marginBottom: 18,
   },
@@ -784,7 +759,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 
-  // ---------------- PICKER ----------------
   pickerContainer: {
     height: 52,
     backgroundColor: COLORS.inputBg,
@@ -808,7 +782,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.inputBg,
   },
 
-  // ---------------- ERRORES ----------------
   error: {
     color: COLORS.error,
     fontSize: 12,
@@ -821,7 +794,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // ---------------- CHECKBOX Y BOTÓN ----------------
   remember: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -875,7 +847,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  // ---------------- FOOTER ----------------
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

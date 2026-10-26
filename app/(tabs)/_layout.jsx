@@ -59,6 +59,7 @@ export default function TabLayout() {
           href: null, // Esto rompe el enlace automático y lo borra visualmente
         }}
       />
+      
 
       <Tabs.Screen
         name="Favoritos"

@@ -9,6 +9,7 @@
     Alert,
     ActivityIndicator,
     Platform,
+    Share,   // Importacion funcion de compartir
   } from "react-native";
 
   import { useRouter } from "expo-router";
@@ -24,7 +25,7 @@
   const COLORS = {
     background: "#0A0C0E",
     surface: "#12161A",
-    activePurple: "#A855F7",
+    activePurple: "#7C3AED",
     textLight: "#F8FAFC",
     textMuted: "#64748B",
   };
@@ -153,6 +154,7 @@
                 name: parsedUser.name || "",
                 email: parsedUser.email || "",
                 avatar: parsedUser.avatar || DEFAULT_AVATAR,
+                role: parsedUser.role || "usuario",
               });
             } catch (error) {
               console.error(
@@ -177,7 +179,7 @@
             setUser({
               name: "Carlos Mendoza",
               email: "carlos.guardian@email.com",
-              avatar: DEFAULT_AVATAR,
+              // avatar: DEFAULT_AVATAR,
             });
           }
 

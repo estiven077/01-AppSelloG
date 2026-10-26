@@ -10,29 +10,37 @@ import {
   Alert,
   StatusBar,
   Platform,
+  LayoutAnimation,
+  UIManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 
+// Habilitar animaciones para Android
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
+// PALETA DE COLORES - SELLO GUARDIÁN
 const COLORS = {
-  background: "#0F172A",     
-  surface: "rgba(30, 41, 59, 0.7)", 
-  activePurple: "#7C3AED",    
-  accent: "#C4B5FD",          
-  textLight: "#F8FAFC",       
-  textMuted: "#94A3B8",      
-  border: "rgba(124, 58, 237, 0.2)",
+  background: "#0A0C0E",
+  surface: "#12161A",
+  activePurple: "#A855F7",
+  accent: "#C084FC",
+  textLight: "#F8FAFC",
+  textMuted: "#CBD5E1",
+  border: "#242A30",
 };
 
 export default function SettingsScreen() {
   const router = useRouter();
 
-  const [theme, setTheme] = useState("system");
+  const [theme, setTheme] = useState("dark");
   const [notifications, setNotifications] = useState(true);
+  const [showThemeToggle, setShowThemeToggle] = useState(false);
 
-  // CARGAR CONFIGURACIÓN
+  // CARGAR CONFIGURACIÓN AL INICIAR
   useEffect(() => {
     loadSettings();
   }, []);
@@ -44,6 +52,8 @@ export default function SettingsScreen() {
 
       if (savedTheme) {
         setTheme(savedTheme);
+      } else {
+        setTheme("dark");
       }
 
       if (savedNotifications !== null) {
@@ -54,9 +64,10 @@ export default function SettingsScreen() {
     }
   };
 
-  // CAMBIAR TEMAS
-  const changeTheme = async (newTheme) => {
+  // CAMBIAR TEMA CON SWITCH
+  const changeThemeSwitch = async (isDark) => {
     try {
+      const newTheme = isDark ? "dark" : "light";
       setTheme(newTheme);
       await AsyncStorage.setItem("app_theme", newTheme);
     } catch (error) {
@@ -74,44 +85,17 @@ export default function SettingsScreen() {
     }
   };
 
-  // SELECCIONAR TEMA
-  const selectTheme = () => {
-    Alert.alert(
-      "Apariencia",
-      "Selecciona cómo quieres ver la aplicación.",
-      [
-        {
-          text: "☀️ Modo claro",
-          onPress: () => changeTheme("light"),
-        },
-        {
-          text: "🌙 Modo oscuro",
-          onPress: () => changeTheme("dark"),
-        },
-        {
-          text: "📱 Automático",
-          onPress: () => changeTheme("system"),
-        },
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-      ]
-    );
-  };
-
-  // NOMBRE DEL TEMA
-  const getThemeName = () => {
-    if (theme === "light") return "Modo claro";
-    if (theme === "dark") return "Modo oscuro";
-    return "Automático";
+  // Desplegar u ocultar el switch de apariencia
+  const toggleThemeDropdown = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowThemeToggle(!showThemeToggle);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -133,12 +117,12 @@ export default function SettingsScreen() {
           <Text style={styles.title}>Configuración</Text>
         </View>
 
-        {/* CUENTA */}
+        {/* SECCIÓN CUENTA */}
         <Text style={styles.sectionTitle}>Cuenta</Text>
 
-        <View style={styles.section}> 
+        <View style={styles.section}>
           <TouchableOpacity
-            style={styles.option}
+            style={[styles.option, styles.lastOption]}
             onPress={() => router.push("/Perfil")}
             activeOpacity={0.7}
           >
@@ -146,14 +130,14 @@ export default function SettingsScreen() {
               <Ionicons
                 name="person-outline"
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Mi perfil</Text>
               <Text style={styles.optionDescription}>
-                Edita tus datos personales
+                Edita tus datos personales y de cuenta
               </Text>
             </View>
 
@@ -162,27 +146,27 @@ export default function SettingsScreen() {
               size={20}
               color={COLORS.textMuted}
             />
-          </TouchableOpacity> 
+          </TouchableOpacity>
         </View>
 
-        {/* PREFERENCIAS */}
+        {/* SECCIÓN PREFERENCIAS */}
         <Text style={styles.sectionTitle}>Preferencias</Text>
 
-        <View style={styles.section}> 
+        <View style={styles.section}>
           {/* NOTIFICACIONES */}
-          <View style={styles.option}> 
+          <View style={styles.option}>
             <View style={styles.iconContainer}>
               <Ionicons
                 name="notifications-outline"
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Notificaciones</Text>
               <Text style={styles.optionDescription}>
-                Recibe avisos sobre tus denuncias y novedades
+                Recibe avisos sobre adopciones y denuncias
               </Text>
             </View>
 
@@ -190,44 +174,60 @@ export default function SettingsScreen() {
               value={notifications}
               onValueChange={changeNotifications}
               trackColor={{
-                false: "#334155",
+                false: "#242A30",
                 true: COLORS.activePurple,
               }}
               thumbColor="#FFFFFF"
             />
-          </View> 
+          </View>
 
-          {/* APARIENCIA */}
+          {/* APARIENCIA VISUAL */}
           <TouchableOpacity
-            style={styles.option}
-            onPress={selectTheme}
-            activeOpacity={0.7} 
-          > 
+            style={[styles.option, !showThemeToggle && styles.lastOption]}
+            onPress={toggleThemeDropdown}
+            activeOpacity={0.7}
+          >
             <View style={styles.iconContainer}>
               <Ionicons
-                name={
-                  theme === "dark"
-                    ? "moon-outline"
-                    : "sunny-outline"
-                }
+                name={theme === "dark" ? "moon-outline" : "sunny-outline"}
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Apariencia</Text>
+              <Text style={styles.optionTitle}>Apariencia visual</Text>
               <Text style={styles.optionDescription}>
-                {getThemeName()}
+                {theme === "dark" ? "Modo oscuro activado" : "Modo claro activado"}
               </Text>
             </View>
 
             <Ionicons
-              name="chevron-forward-outline"
+              name={showThemeToggle ? "chevron-down-outline" : "chevron-forward-outline"}
               size={20}
               color={COLORS.textMuted}
-            /> 
+            />
           </TouchableOpacity>
+
+          {/* SUBMENÚ DESPLEGABLE CORREGIDO (Alineado con el texto principal) */}
+          {showThemeToggle && (
+            <View style={[styles.subOptionContainer, styles.lastOption]}>
+              <View style={styles.subOptionContent}>
+                <View style={styles.subIconPlaceholder} />
+                <Text style={styles.subOptionTitle}>Modo oscuro</Text>
+              </View>
+
+              <Switch
+                value={theme === "dark"}
+                onValueChange={changeThemeSwitch}
+                trackColor={{
+                  false: "#242A30",
+                  true: COLORS.activePurple,
+                }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          )}
 
           {/* IDIOMA */}
           <TouchableOpacity
@@ -235,22 +235,22 @@ export default function SettingsScreen() {
             onPress={() =>
               Alert.alert(
                 "Idioma",
-                "Actualmente Sello Guardián está disponible en español."
+                "Actualmente Sello Guardián está disponible únicamente en español."
               )
             }
             activeOpacity={0.7}
-          > 
+          >
             <View style={styles.iconContainer}>
               <Ionicons
                 name="language-outline"
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Idioma</Text>
-              <Text style={styles.optionDescription}>Español</Text>
+              <Text style={styles.optionDescription}>Español (Latinoamérica)</Text>
             </View>
 
             <Ionicons
@@ -258,64 +258,62 @@ export default function SettingsScreen() {
               size={20}
               color={COLORS.textMuted}
             />
-          </TouchableOpacity> 
+          </TouchableOpacity>
         </View>
 
-        {/* SEGURIDAD */}
+        {/* SECCIÓN SEGURIDAD */}
         <Text style={styles.sectionTitle}>Seguridad y privacidad</Text>
 
-        <View style={styles.section}> 
-          {/* PRIVACIDAD */}
+        <View style={styles.section}>
           <TouchableOpacity
             style={styles.option}
             onPress={() => router.push("/Privacidad")}
             activeOpacity={0.7}
-          > 
+          >
             <View style={styles.iconContainer}>
               <Ionicons
                 name="shield-checkmark-outline"
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Privacidad y seguridad</Text>
               <Text style={styles.optionDescription}>
-                Gestiona tus datos y privacidad
+                Gestiona tus permisos y tratamiento de datos
               </Text>
             </View>
 
             <Ionicons
               name="chevron-forward-outline"
               size={20}
-              color={COLORS.textMuted} 
-            /> 
+              color={COLORS.textMuted}
+            />
           </TouchableOpacity>
 
-          {/* TÉRMINOS */}
           <TouchableOpacity
             style={[styles.option, styles.lastOption]}
             onPress={() =>
               Alert.alert(
                 "Términos y condiciones",
-                "Aquí estarán disponibles los términos y condiciones de uso de Sello Guardián."
+                "Consulta los términos legales y políticas de uso de Sello Guardián."
               )
             }
             activeOpacity={0.7}
-          > 
+          >
             <View style={styles.iconContainer}>
               <Ionicons
                 name="document-text-outline"
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Términos y condiciones</Text>
               <Text style={styles.optionDescription}>
-                Consulta las condiciones de uso
+                Condiciones del servicio y políticas
               </Text>
             </View>
 
@@ -324,69 +322,35 @@ export default function SettingsScreen() {
               size={20}
               color={COLORS.textMuted}
             />
-          </TouchableOpacity> 
-        </View> 
+          </TouchableOpacity>
+        </View>
 
-        {/* AYUDA */}
+        {/* SECCIÓN AYUDA */}
         <Text style={styles.sectionTitle}>Ayuda</Text>
 
-        <View style={styles.section}> 
-          {/* SOPORTE */}
+        <View style={styles.section}>
           <TouchableOpacity
             style={styles.option}
             onPress={() =>
               Alert.alert(
                 "Ayuda y soporte",
-                "Si necesitas ayuda, puedes comunicarte con el equipo de Sello Guardián."
+                "Comunícate con nuestro equipo de soporte para resolver dudas o reportar fallos."
               )
             }
             activeOpacity={0.7}
-          > 
+          >
             <View style={styles.iconContainer}>
               <Ionicons
                 name="help-circle-outline"
                 size={22}
-                color={COLORS.accent}
+                color={COLORS.activePurple}
               />
             </View>
 
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Ayuda y soporte</Text>
               <Text style={styles.optionDescription}>
-                Obtén ayuda con la aplicación
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            /> 
-          </TouchableOpacity>
-
-          {/* ACERCA DE */}
-          <TouchableOpacity
-            style={[styles.option, styles.lastOption]}
-            onPress={() =>
-              Alert.alert(
-                "Sello Guardián",
-                "Aplicación dedicada a la protección, denuncia y adopción responsable de animales."
-              )
-            }
-            activeOpacity={0.7} 
-          > 
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={COLORS.accent}
-              />
-            </View>
-
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Acerca de Sello Guardián</Text>
-              <Text style={styles.optionDescription}>
-                Información sobre la aplicación
+                Centro de ayuda y atención al usuario
               </Text>
             </View>
 
@@ -395,7 +359,39 @@ export default function SettingsScreen() {
               size={20}
               color={COLORS.textMuted}
             />
-          </TouchableOpacity> 
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.option, styles.lastOption]}
+            onPress={() =>
+              Alert.alert(
+                "Sello Guardián",
+                "Iniciativa enfocada en la protección, adopción y lucha contra el maltrato animal."
+              )
+            }
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={COLORS.activePurple}
+              />
+            </View>
+
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Acerca de Sello Guardián</Text>
+              <Text style={styles.optionDescription}>
+                Versión del proyecto y créditos
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward-outline"
+              size={20}
+              color={COLORS.textMuted}
+            />
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.version}>Sello Guardián • Versión 1.0.0</Text>
@@ -410,98 +406,110 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
-
   scrollContainer: {
     flex: 1,
   },
-
   scrollContent: {
     paddingBottom: 30,
   },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingVertical: 20,
   },
-
   backButton: {
     marginRight: 15,
     padding: 4,
   },
-
   title: {
     color: COLORS.textLight,
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "bold",
   },
-
   sectionTitle: {
     color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "bold",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginTop: 20,
-    marginBottom: 8,
+    letterSpacing: 1.2,
+    marginTop: 22,
+    marginBottom: 10,
     marginHorizontal: 20,
   },
-
   section: {
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: "hidden",
   },
-
   option: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-
   lastOption: {
     borderBottomWidth: 0,
   },
-
   iconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "rgba(124, 58, 237, 0.15)",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(168, 85, 247, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-
   optionContent: {
     flex: 1,
     marginLeft: 14,
     marginRight: 10,
   },
-
   optionTitle: {
     color: COLORS.textLight,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
   },
-
   optionDescription: {
     color: COLORS.textMuted,
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 2,
+    lineHeight: 18,
   },
-
+  /* ESTILOS DEL SUBMENÚ ALINEADO */
+  subOptionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: "rgba(18, 22, 26, 0.5)",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  subOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  subIconPlaceholder: {
+    width: 42, // Ancho exacto del contenedor del icono superior para guardar la misma distancia
+    marginRight: 14,
+  },
+  subOptionTitle: {
+    color: COLORS.textLight,
+    fontSize: 14,
+    fontWeight: "500",
+  },
   version: {
     color: COLORS.textMuted,
     textAlign: "center",
-    fontSize: 12,
-    marginTop: 30,
+    fontSize: 13,
+    marginTop: 35,
     marginBottom: 10,
   },
 });

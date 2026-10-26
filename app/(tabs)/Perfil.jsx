@@ -394,7 +394,7 @@ export default function Perfil({ navigation }) {
                     activeTab === "publicaciones" && styles.activeTabText,
                   ]}
                 >
-                  Publicaciones
+                  Mis Publicaciones
                 </Text>
               </TouchableOpacity>
 
@@ -432,7 +432,7 @@ export default function Perfil({ navigation }) {
                     activeTab === "adopciones" && styles.activeTabText,
                   ]}
                 >
-                  Adopciones
+                  Mis Adopciones
                 </Text>
               </TouchableOpacity>
             </View>

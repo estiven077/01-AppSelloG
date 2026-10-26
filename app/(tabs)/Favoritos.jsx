@@ -43,7 +43,7 @@ export default function FavoritosScreen() {
   // Lista de mascotas favoritas (Inicia vacía)
   const [favorites, setFavorites] = useState([]);
 
-  // Escuchar parámetros entrantes desde el Home o desde la lista general
+  // Escuchar parámetros entrantes desde el Home (incluyendo el parámetro de refresco params?.t)
   useEffect(() => {
     if (params?.newPet) {
       try {
@@ -51,6 +51,7 @@ export default function FavoritosScreen() {
         setFavorites((prevFavorites) => {
           const exists = prevFavorites.find((item) => item.id === petData.id);
           if (exists) {
+            // Si la mascota ya estaba registrada en la lista pero se había desmarcado, la vuelve a activar
             return prevFavorites.map((item) =>
               item.id === petData.id ? { ...item, isFavorite: true } : item
             );
@@ -72,7 +73,7 @@ export default function FavoritosScreen() {
         console.error("Error al procesar la mascota enviada:", error);
       }
     }
-  }, [params?.newPet]);
+  }, [params?.newPet, params?.t]); // Se añade params?.t como dependencia para detectar re-agregaciones
 
   // Alternar o remover de favoritos
   const toggleFavorite = (id) => {
@@ -170,14 +171,14 @@ export default function FavoritosScreen() {
       {/* NAVBAR REUTILIZABLE */}
       <Navbar unreadNotifications={2} />
 
-      {/* HEADER DE LA SECCIÓN FAVORITOS */}
+      {/* HEADER DE LA SECCIÓN FAVORITOS CON EL BADGE EN LA ESQUINA */}
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionBadge}>TUS MASCOTAS FAVORITAS</Text>
           <Text style={styles.headerTitle}>Guardados</Text>
         </View>
 
-        {/* Badge con el conteo de favoritos */}
+        {/* Badge con el conteo de favoritos llevado hacia la esquina */}
         <View style={styles.favCountBadge}>
           <Ionicons name="heart" size={16} color={COLORS.heartIcon} />
           <Text style={styles.favCountText}>
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justify: "space-between",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   columnWrapper: {
-    justify: "space-between",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   listContent: {
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justify: "center",
+    justifyContent: "center",
     alignItems: "center",
   },
   cardInfo: {
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
   },
   nameRow: {
     flexDirection: "row",
-    justify: "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
   },
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
   },
   detailsRow: {
     flexDirection: "row",
-    justify: "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
   },
   detailItem: {
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justify: "center",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
     marginTop: 40,

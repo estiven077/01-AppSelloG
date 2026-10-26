@@ -7,22 +7,25 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  Alert,  
+  Alert,
   Modal,
+  Switch,
+  Image,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker"; // npx expo install expo-image-picker
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router"; // IMPORTANTE: Para la navegacion
+import { useAuth } from "../../context/AuthContext"; // IMPORTANTE: Cambia la ruta segun tu proyecto
 
-// Importamos el Navbar Reutilizable
+
 import Navbar from "../../components/Navbar";
-
-// IMPORTAMOS LOS ESTILOS Y COLORES DESDE LA CARPETA STYLES
 import { styles } from "../../styles/Reportes.js";
 
 const COLORS = {
-  primary: "#a855f7",          // Color morado principal
-  primaryContainer: "#9333ea",  // Contenedor morado
-  onPrimaryContainer: "#ffffff",// Texto sobre contenedor
+  primary: "#a855f7",
+  primaryContainer: "#9333ea",
+  onPrimaryContainer: "#ffffff",
   surface: "#111414",
   surfaceContainer: "#1d2020",
   onSurface: "#e1e3e2",
@@ -32,322 +35,903 @@ const COLORS = {
   error: "#ef4444",
   warning: "#f39c12",
   info: "#3b82f6",
+  success: "#22c55e",
+  lavender: "#a78bfa", // botones y acentos del prototipo
+  onLavender: "#1e1038", // texto sobre lavender
 };
 
 const STORAGE_KEY = "@sello_guardian_reportes";
 
-const REPORT_TYPES = [
-  { id: 'abuso', icon: 'healing', label: 'Abuso Físico' },
-  { id: 'abandono', icon: 'home-work', label: 'Abandono' },
-  { id: 'venta', icon: 'storefront', label: 'Venta Ilegal' },
-  { id: 'otro', icon: 'more-horiz', label: 'Otra Situación de Riesgo', wide: true },
+const TIPOS_DENUNCIA = [
+  { value: "abuso", label: "Abuso físico" },
+  { value: "abandono", label: "Abandono" },
+  { value: "venta", label: "Venta ilegal" },
+  { value: "otro", label: "Otra situación de riesgo" },
 ];
 
+const TIPOS_REPORTE = [
+  { value: "perdido", label: "Animal perdido" },
+  { value: "encontrado", label: "Animal encontrado" },
+  { value: "herido", label: "Animal herido o enfermo" },
+  { value: "otro", label: "Otro" },
+];
+
+const ANIMALES = [
+  { value: "Perro", label: "Perro" },
+  { value: "Gato", label: "Gato" },
+  { value: "Ave", label: "Ave" },
+  { value: "Otro", label: "Otro" },
+];
+
+const URGENCIAS = [
+  { value: "Baja", label: "Baja" },
+  { value: "Media", label: "Media" },
+  { value: "Alta", label: "Alta (riesgo inmediato)" },
+];
+
+const ESTADOS = [
+  "Recibido",
+  "En revision",
+  "En atencion",
+  "Atendido",
+];
+
+const labelDe = (opciones, valor) =>
+  opciones.find((o) => o.value === valor)?.label || valor;
+
+const normalizar = (valor) =>
+  String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+/*     CAMPOS REUTILIZABLES     */
+
+function SelectField({
+  icon,
+  placeholder,
+  value,
+  options,
+  onSelect,
+  isOpen,
+  onToggle,
+  error,
+}) {
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <View style={styles.group}>
+      <TouchableOpacity
+        style={[
+          styles.inputContainerOutline,
+          !!error && styles.inputError,
+        ]}
+        onPress={onToggle}
+        activeOpacity={0.8}
+      >
+        <Ionicons name={icon} size={20} color={COLORS.onSurfaceVariant} />
+        <Text style={[styles.selectText, !selected && styles.placeholderText]}>
+          {selected ? selected.label : placeholder}
+        </Text>
+        <Ionicons
+          name={isOpen ? "chevron-up-outline" : "chevron-down-outline"}
+          size={18}
+          color={COLORS.onSurfaceVariant}
+        />
+      </TouchableOpacity>
+
+      {isOpen && (
+        <View style={styles.dropdownMenu}>
+          {options.map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              style={styles.dropdownItem}
+              onPress={() => onSelect(item.value)}
+            >
+              <Text style={styles.dropdownItemText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+function TextField({
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  error,
+  multiline = false,
+  keyboardType = "default",
+}) {
+  return (
+    <View style={styles.group}>
+      <View
+        style={[
+          styles.inputContainerOutline,
+          multiline && styles.inputContainerMultiline,
+          !!error && styles.inputError,
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={20}
+          color={COLORS.onSurfaceVariant}
+          style={multiline ? { marginTop: 6 } : null}
+        />
+        <TextInput
+          style={[styles.inputText, multiline && styles.inputTextMultiline]}
+          placeholder={placeholder}
+          placeholderTextColor={COLORS.onSurfaceVariant}
+          value={value}
+          onChangeText={onChangeText}
+          multiline={multiline}
+          numberOfLines={multiline ? 4 : 1}
+          textAlignVertical={multiline ? "top" : "center"}
+          keyboardType={keyboardType}
+        />
+      </View>
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+/*     EVIDENCIA VISUAL (mínimo 2 fotos)     */
+
+const MIN_FOTOS = 2;
+const MAX_FOTOS = 5;
+const ERROR_FOTOS = `Agrega mínimo ${MIN_FOTOS} fotos como evidencia`;
+
+function EvidenciaPicker({ fotos, onChange, error }) {
+  const quitar = (uri) => onChange(fotos.filter((f) => f !== uri));
+
+  const desdeGaleria = async () => {
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      Alert.alert("Permiso necesario", "Permite el acceso a tus fotos para adjuntar evidencia.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"], // si tu SDK es < 52 usa ImagePicker.MediaTypeOptions.Images
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_FOTOS - fotos.length,
+      quality: 0.7,
+    });
+    if (!res.canceled) {
+      onChange([...fotos, ...res.assets.map((a) => a.uri)].slice(0, MAX_FOTOS));
+    }
+  };
+
+  const desdeCamara = async () => {
+    const permiso = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permiso.granted) {
+      Alert.alert("Permiso necesario", "Permite el acceso a la cámara para tomar la foto.");
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+    if (!res.canceled) {
+      onChange([...fotos, res.assets[0].uri].slice(0, MAX_FOTOS));
+    }
+  };
+
+  const agregar = () => {
+    if (fotos.length >= MAX_FOTOS) {
+      Alert.alert("Límite alcanzado", `Puedes adjuntar máximo ${MAX_FOTOS} fotos.`);
+      return;
+    }
+    Alert.alert("Agregar evidencia", "¿Cómo quieres añadir la foto?", [
+      { text: "Tomar foto", onPress: desdeCamara },
+      { text: "Elegir de la galería", onPress: desdeGaleria },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  };
+
+  const completo = fotos.length >= MIN_FOTOS;
+
+  return (
+    <View style={styles.group}>
+      <View style={[styles.evidenceBox, !!error && styles.evidenceBoxError]}>
+        <View style={styles.evidenceHeader}>
+          <View style={styles.evidenceTitleRow}>
+            <Ionicons name="camera-outline" size={20} color={COLORS.success} />
+            <Text style={styles.evidenceTitle}>Evidencia visual *</Text>
+          </View>
+          <Text
+            style={[
+              styles.evidenceCount,
+              completo && { color: COLORS.success },
+            ]}
+          >
+            {fotos.length} de {MAX_FOTOS} fotos
+          </Text>
+        </View>
+        <Text style={styles.evidenceHint}>
+          Mínimo {MIN_FOTOS} fotos, máximo {MAX_FOTOS}.
+        </Text>
+
+        <View style={styles.evidenceRow}>
+          {fotos.map((uri) => (
+            <View key={uri} style={styles.evidenceThumbWrap}>
+              <Image source={{ uri }} style={styles.evidenceThumb} />
+              <TouchableOpacity
+                style={styles.evidenceRemove}
+                onPress={() => quitar(uri)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Ionicons name="close" size={13} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          {fotos.length < MAX_FOTOS && (
+            <TouchableOpacity style={styles.evidenceAdd} activeOpacity={0.8} onPress={agregar}>
+              <Ionicons name="camera-outline" size={22} color={COLORS.onSurfaceVariant} />
+              <Text style={styles.evidenceAddText}>Agregar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+/*     SWITCH DE REPORTE ANÓNIMO     */
+
+function AnonimoToggle({ value, onChange }) {
+  return (
+    <View style={styles.anonRow}>
+      <View style={styles.anonIconWrap}>
+        <Ionicons name="eye-off-outline" size={20} color={COLORS.onSurfaceVariant} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.anonTitle}>Reporte anónimo</Text>
+        <Text style={styles.anonSubtitle}>Tu identidad estará protegida ante terceros</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: "rgba(255,255,255,0.18)", true: COLORS.primaryContainer }}
+        thumbColor="#ffffff"
+      />
+    </View>
+  );
+}
+
+/*     BOTÓN DE ENVÍO (estilo prototipo)     */
+
+function BotonEnviar({ texto, onPress }) {
+  return (
+    <>
+      <TouchableOpacity style={styles.submitButton} activeOpacity={0.85} onPress={onPress}>
+        <Ionicons name="send-outline" size={19} color={COLORS.onLavender} />
+        <Text style={styles.submitButtonText}>{texto}</Text>
+      </TouchableOpacity>
+      <Text style={styles.submitNote}>
+        Al enviar, se alertará de inmediato a la red de rescatistas y cuadrilla de bienestar animal
+        en Popayán.
+      </Text>
+    </>
+  );
+}
+
+/*     FORMULARIO DE DENUNCIA     */
+
+function DenunciaForm({ onSubmit, onInvitado }) {
+  const [form, setForm] = useState({
+    tipo: "",
+    otraSituacion: "",
+    animal: "",
+    cantidad: "",
+    urgencia: "",
+    zona: "",
+    referencia: "",
+    descripcion: "",
+    fotos: [],
+  });
+  const [errors, setErrors] = useState({});
+  const [openSelect, setOpenSelect] = useState(null);
+
+  const setField = (campo, valor) => {
+    setForm((prev) => ({ ...prev, [campo]: valor }));
+    setErrors((prev) => ({ ...prev, [campo]: undefined }));
+  };
+
+  const toggle = (nombre) =>
+    setOpenSelect((actual) => (actual === nombre ? null : nombre));
+
+  const elegir = (campo, valor) => {
+    setField(campo, valor);
+    setOpenSelect(null);
+  };
+
+  function validar() {
+    const e = {};
+    if (!form.tipo) e.tipo = "Selecciona el tipo de situación";
+    if (form.tipo === "otro" && !form.otraSituacion.trim())
+      e.otraSituacion = "Indica cuál es la situación";
+    if (!form.animal) e.animal = "Selecciona el animal";
+    if (form.cantidad && !/^\d+$/.test(form.cantidad.trim()))
+      e.cantidad = "Escribe solo números";
+    if (!form.urgencia) e.urgencia = "Selecciona la urgencia";
+    if (!form.zona.trim()) e.zona = "Escribe la zona, barrio o dirección";
+    if (!form.descripcion.trim()) e.descripcion = "Describe lo que ocurre";
+    if (form.fotos.length < MIN_FOTOS) e.fotos = ERROR_FOTOS;
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function enviar() {
+    if (onInvitado()) return; // INTERCEPTOR: Si es invitado cancela el envio
+
+    if (!validar()) return;
+
+    const detalles = [`Urgencia: ${form.urgencia}`];
+    if (form.cantidad.trim()) detalles.push(`Cantidad: ${form.cantidad.trim()}`);
+    if (form.referencia.trim())
+      detalles.push(`Referencia: ${form.referencia.trim()}`);
+
+    onSubmit({
+      categoria: "denuncia",
+      tipo: form.tipo,
+      tipoLabel:
+        form.tipo === "otro"
+          ? form.otraSituacion.trim()
+          : labelDe(TIPOS_DENUNCIA, form.tipo),
+      animal: form.animal,
+      zona: form.zona.trim(),
+      descripcion: form.descripcion.trim(),
+      detalles,
+      fotos: form.fotos,
+    });
+  }
+
+  return (
+    <View style={styles.formGroup}>
+      <SelectField
+        icon="alert-circle-outline"
+        placeholder="Tipo de situación *"
+        value={form.tipo}
+        options={TIPOS_DENUNCIA}
+        isOpen={openSelect === "tipo"}
+        onToggle={() => toggle("tipo")}
+        onSelect={(v) => elegir("tipo", v)}
+        error={errors.tipo}
+      />
+
+      {form.tipo === "otro" && (
+        <TextField
+          icon="create-outline"
+          placeholder="¿Cual es la situacion? *"
+          value={form.otraSituacion}
+          onChangeText={(t) => setField("otraSituacion", t)}
+          error={errors.otraSituacion}
+        />
+      )}
+
+      <SelectField
+        icon="paw-outline"
+        placeholder="Animal *"
+        value={form.animal}
+        options={ANIMALES}
+        isOpen={openSelect === "animal"}
+        onToggle={() => toggle("animal")}
+        onSelect={(v) => elegir("animal", v)}
+        error={errors.animal}
+      />
+
+      <TextField
+        icon="layers-outline"
+        placeholder="Cantidad de animales afectados (opcional)"
+        value={form.cantidad}
+        onChangeText={(t) => setField("cantidad", t)}
+        keyboardType="numeric"
+        error={errors.cantidad}
+      />
+
+      <SelectField
+        icon="speedometer-outline"
+        placeholder="Nivel de urgencia *"
+        value={form.urgencia}
+        options={URGENCIAS}
+        isOpen={openSelect === "urgencia"}
+        onToggle={() => toggle("urgencia")}
+        onSelect={(v) => elegir("urgencia", v)}
+        error={errors.urgencia}
+      />
+
+      <TextField
+        icon="location-outline"
+        placeholder="Zona / ciudad / barrio / direccion *"
+        value={form.zona}
+        onChangeText={(t) => setField("zona", t)}
+        error={errors.zona}
+      />
+
+      <TextField
+        icon="navigate-outline"
+        placeholder="Punto de referencia (opcional)"
+        value={form.referencia}
+        onChangeText={(t) => setField("referencia", t)}
+      />
+
+      <TextField
+        icon="document-text-outline"
+        placeholder="Describe que esta ocurriendo y el estado del animal *"
+        value={form.descripcion}
+        onChangeText={(t) => setField("descripcion", t)}
+        multiline
+        error={errors.descripcion}
+      />
+
+      <EvidenciaPicker
+        fotos={form.fotos}
+        onChange={(f) => setField("fotos", f)}
+        error={errors.fotos}
+      />
+
+      <BotonEnviar texto="Enviar Denuncia y Notificar" onPress={enviar} />
+    </View>
+  );
+}
+
+/*       FORMULARIO DE REPORTE      */
+
+function ReporteForm({ onSubmit, onInvitado }) {
+  const [form, setForm] = useState({
+    tipo: "",
+    otro: "",
+    animal: "",
+    nombreAnimal: "",
+    zona: "",
+    descripcion: "",
+    contacto: "",
+    fotos: [],
+    anonimo: false,
+  });
+  const [errors, setErrors] = useState({});
+  const [openSelect, setOpenSelect] = useState(null);
+
+  const setField = (campo, valor) => {
+    setForm((prev) => ({ ...prev, [campo]: valor }));
+    setErrors((prev) => ({ ...prev, [campo]: undefined }));
+  };
+
+  const toggle = (nombre) =>
+    setOpenSelect((actual) => (actual === nombre ? null : nombre));
+
+  const elegir = (campo, valor) => {
+    setField(campo, valor);
+    setOpenSelect(null);
+  };
+
+  function validar() {
+    const e = {};
+    if (!form.tipo) e.tipo = "Selecciona el tipo de reporte";
+    if (form.tipo === "otro" && !form.otro.trim())
+      e.otro = "Indica de qué trata el reporte";
+    if (!form.animal) e.animal = "Selecciona el animal";
+    if (!form.zona.trim()) e.zona = "Escribe la zona, barrio o dirección";
+    if (!form.descripcion.trim()) e.descripcion = "Describe el caso";
+    if (!form.contacto.trim()) e.contacto = "Escribe un teléfono de contacto";
+    else if (form.contacto.replace(/\D/g, "").length < 7)
+      e.contacto = "Escribe un teléfono válido";
+    if (form.fotos.length < MIN_FOTOS) e.fotos = ERROR_FOTOS;
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function enviar() {
+    if (onInvitado()) return;
+
+    if (!validar()) return;
+
+    const detalles = [`Contacto: ${form.contacto.trim()}`];
+    if (form.nombreAnimal.trim())
+      detalles.unshift(`Nombre: ${form.nombreAnimal.trim()}`);
+
+    onSubmit({
+      categoria: "reporte",
+      tipo: form.tipo,
+      tipoLabel:
+        form.tipo === "otro"
+          ? form.otro.trim()
+          : labelDe(TIPOS_REPORTE, form.tipo),
+      animal: form.animal,
+      zona: form.zona.trim(),
+      descripcion: form.descripcion.trim(),
+      detalles,
+      fotos: form.fotos,
+      anonimo: form.anonimo,
+    });
+  }
+
+  return (
+    <View style={styles.formGroup}>
+      <SelectField
+        icon="flag-outline"
+        placeholder="Tipo de reporte *"
+        value={form.tipo}
+        options={TIPOS_REPORTE}
+        isOpen={openSelect === "tipo"}
+        onToggle={() => toggle("tipo")}
+        onSelect={(v) => elegir("tipo", v)}
+        error={errors.tipo}
+      />
+
+      {form.tipo === "otro" && (
+        <TextField
+          icon="create-outline"
+          placeholder="¿De qué trata el reporte? *"
+          value={form.otro}
+          onChangeText={(t) => setField("otro", t)}
+          error={errors.otro}
+        />
+      )}
+
+      <SelectField
+        icon="paw-outline"
+        placeholder="Animal *"
+        value={form.animal}
+        options={ANIMALES}
+        isOpen={openSelect === "animal"}
+        onToggle={() => toggle("animal")}
+        onSelect={(v) => elegir("animal", v)}
+        error={errors.animal}
+      />
+
+      <TextField
+        icon="pricetag-outline"
+        placeholder="Nombre del animal (si lo conoces)"
+        value={form.nombreAnimal}
+        onChangeText={(t) => setField("nombreAnimal", t)}
+      />
+
+      <TextField
+        icon="location-outline"
+        placeholder="Zona / ciudad / barrio / dirección *"
+        value={form.zona}
+        onChangeText={(t) => setField("zona", t)}
+        error={errors.zona}
+      />
+
+      <TextField
+        icon="document-text-outline"
+        placeholder="Descripción (color, tamaño, señas particulares...) *"
+        value={form.descripcion}
+        onChangeText={(t) => setField("descripcion", t)}
+        multiline
+        error={errors.descripcion}
+      />
+
+      <TextField
+        icon="call-outline"
+        placeholder="Teléfono de contacto *"
+        value={form.contacto}
+        onChangeText={(t) => setField("contacto", t)}
+        keyboardType="phone-pad"
+        error={errors.contacto}
+      />
+
+      <EvidenciaPicker
+        fotos={form.fotos}
+        onChange={(f) => setField("fotos", f)}
+        error={errors.fotos}
+      />
+
+      <AnonimoToggle
+        value={form.anonimo}
+        onChange={(v) => setField("anonimo", v)}
+      />
+
+      <BotonEnviar texto="Enviar Reporte y Notificar" onPress={enviar} />
+    </View>
+  );
+}
+
+/* ================= PANTALLA PRINCIPAL ================= */
 export default function ReportesScreen() {
+
+  const { user } = useAuth(); // Trae el usuario logueado
+  const router = useRouter(); // Llama al enrutador
+  const [mostrarModalInvitado, setMostrarModalInvitado] = useState(false); // Controla el aviso visual
+
+  const esAdmin = user?.role === "admin" || user?.role === "fundacion";
+  const usuarioId = user?.id || null;
+
   const [reportes, setReportes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState("Todos");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [animal, setAnimal] = useState("");
-  const [zona, setZona] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [reportType, setReportType] = useState('abuso');
-  const [otraSituacion, setOtraSituacion] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("Todas");
+  const [modalMode, setModalMode] = useState(null);
+  const [expandidoId, setExpandidoId] = useState(null);
 
   useEffect(() => {
     cargarReportes();
   }, []);
 
+  const verificarInvitado = () => {
+    if (!user) {
+      setMostrarModalInvitado(true);
+      return true;
+    }
+    return false;
+  };
+
   async function cargarReportes() {
     try {
       const datos = await AsyncStorage.getItem(STORAGE_KEY);
       if (datos !== null) {
-        setReportes(JSON.parse(datos));
+        const registros = JSON.parse(datos);
+        setReportes(Array.isArray(registros) ? registros : []);
       }
     } catch (error) {
       console.log("Error cargando reportes:", error);
+      Alert.alert("Error", "No fue posible cargar los registros.");
     }
   }
 
   async function guardarReportes(nuevosReportes) {
     try {
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(nuevosReportes)
-      );
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosReportes));
       setReportes(nuevosReportes);
+      return true;
     } catch (error) {
       console.log("Error guardando reportes:", error);
-      Alert.alert(
-        "Error",
-        "No fue posible guardar los reportes."
-      );
+      Alert.alert("Error", "No fue posible guardar los registros.");
+      return false;
     }
   }
 
-  async function crearReporte() {
-    if (!animal.trim()) {
-      Alert.alert(
-        "Falta información",
-        "Selecciona el animal que quieres reportar."
-      );
-      return;
-    }
 
-    if (!zona.trim()) {
-      Alert.alert(
-        "Falta información",
-        "Escribe la zona, ciudad, barrio o dirección."
-      );
-      return;
-    }
-
-    if (!descripcion.trim()) {
-      Alert.alert(
-        "Falta información",
-        "Describe lo que está ocurriendo."
-      );
-      return;
-    }
-
-    const nuevoReporte = {
-      id: Date.now().toString(),
-      animal: animal.trim(),
-      zona: zona.trim(),
-      descripcion: descripcion.trim(),
-      estado: "En proceso",
+  async function agregarRegistro(datos) {
+    const nuevo = {
+      id: `${Date.now()}`,
+      creadorId: usuarioId ?? "usuario-local",
+      estado: "Recibido",
       fecha: new Date().toLocaleDateString("es-CO", {
         day: "2-digit",
         month: "short",
         year: "numeric",
       }),
+      ...datos,
     };
 
-    const nuevosReportes = [
-      nuevoReporte,
-      ...reportes,
-    ];
+    const guardado = await guardarReportes([nuevo, ...reportes]);
 
-    await guardarReportes(nuevosReportes);
+    if (!guardado) return;
 
-    setAnimal("");
-    setZona("");
-    setDescripcion("");
-    setModalVisible(false);
+    setModalMode(null);
 
     Alert.alert(
-      "Reporte registrado",
-      "La denuncia fue registrada correctamente."
+      datos.categoria === "denuncia"
+        ? "Denuncia registrada"
+        : "Reporte registrado",
+      "Tu caso se guardó correctamente y puedes consultar su estado."
     );
   }
 
-  async function marcarAtendido(id) {
-    const nuevosReportes = reportes.map((reporte) => {
-      if (reporte.id === id) {
-        return {
-          ...reporte,
-          estado: "Atendido",
-        };
-      }
-      return reporte;
-    });
+
+  async function cambiarEstado(id, nuevoEstado) {
+    if (!esAdmin) {
+      Alert.alert("Acceso restringido", "Solo el administrador puede actualizar el estado.");
+      return;
+    }
+
+    const nuevosReportes = reportes.map((r) =>
+      r.id === id
+        ? {
+          ...r,
+          estado: nuevoEstado,
+          actualizadoEn: new Date().toISOString(),
+        }
+        : r
+    );
 
     await guardarReportes(nuevosReportes);
+  }
+
+  function seleccionarEstado(r) {
+    Alert.alert("Actualizar estado", "Selecciona el estado del caso:", [
+      ...ESTADOS.map((estado) => ({
+        text: estado,
+        onPress: () => cambiarEstado(r.id, estado),
+      })),
+      { text: "Cancelar", style: "cancel" },
+    ]);
   }
 
   function confirmarEliminar(id) {
-    Alert.alert(
-      "Eliminar reporte",
-      "¿Seguro que quieres eliminar este reporte?",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
+    if (!esAdmin) return;
+
+    Alert.alert("Eliminar registro", "¿Seguro que quieres eliminar este caso?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          await guardarReportes(reportes.filter((r) => r.id !== id));
         },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: async () => {
-            const nuevosReportes = reportes.filter(
-              (reporte) => reporte.id !== id
-            );
-            await guardarReportes(nuevosReportes);
-          },
-        },
-      ]
-    );
+      },
+    ]);
   }
 
-  const totalReportes = reportes.length;
-  const totalAtendidos = reportes.filter(
-    (reporte) => reporte.estado === "Atendido"
+  const categoriaDe = (r) => r.categoria || "denuncia";
+
+  // Filtra por propietario antes de mostrar los resultados.
+  const misReportes = reportes.filter(
+    (r) => esAdmin || (usuarioId != null && String(r.creadorId) === String(usuarioId))
+  );
+
+  const totalDenuncias = misReportes.filter(
+    (r) => categoriaDe(r) === "denuncia"
   ).length;
-  const totalEnProceso = reportes.filter(
-    (reporte) => reporte.estado === "En proceso"
+  const totalReportesSolo = misReportes.filter(
+    (r) => categoriaDe(r) === "reporte"
+  ).length;
+  const totalAtendidos = misReportes.filter(
+    (r) => r.estado === "Atendido"
   ).length;
 
-  const reportesFiltrados = reportes.filter((reporte) => {
-    const texto = busqueda.toLowerCase().trim();
+  const reportesFiltrados = misReportes.filter((r) => {
+    const texto = normalizar(busqueda);
+    const camposBusqueda = [
+      r.animal,
+      r.zona,
+      r.descripcion,
+      r.tipoLabel,
+      r.fecha,
+      r.estado,
+      ...(Array.isArray(r.detalles) ? r.detalles : []),
+    ];
 
     const coincideBusqueda =
-      texto === "" ||
-      reporte.animal.toLowerCase().includes(texto) ||
-      reporte.zona.toLowerCase().includes(texto) ||
-      reporte.descripcion.toLowerCase().includes(texto);
+      !texto || camposBusqueda.some((campo) => normalizar(campo).includes(texto));
 
-    const coincideFiltro =
-      filtro === "Todos" ||
-      reporte.estado === filtro;
+    const coincideEstado = filtro === "Todos" || r.estado === filtro;
+    const coincideCategoria =
+      filtroCategoria === "Todas" || categoriaDe(r) === filtroCategoria;
 
-    return coincideBusqueda && coincideFiltro;
+    return coincideBusqueda && coincideEstado && coincideCategoria;
   });
+
+  const colorEstado = (estado) => {
+    const e = normalizar(estado);
+    if (e === "atendido") return COLORS.success;
+    if (e === "en atencion") return COLORS.warning;
+    if (e === "en revision") return COLORS.info;
+    return COLORS.primary;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.surface}
-      />
-
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.surface} />
       <Navbar unreadNotifications={0} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ===== ENCABEZADO ===== */}
         <View style={styles.header}>
           <Text style={styles.sectionBadge}>
-            VIGILANCIA COMUNITARIA
+            {esAdmin ? "PANEL DE GESTIÓN" : "SEGUIMIENTO COMUNITARIO"}
           </Text>
-
           <Text style={styles.headerTitle}>
-            Reportes y Denuncias
+            {esAdmin ? "Reportes y Denuncias" : "Mis reportes y denuncias"}
           </Text>
-
           <Text style={styles.headerSubtitle}>
-            Reporta casos de abandono, maltrato o animales
-            que necesiten ayuda en tu comunidad.
+            {esAdmin
+              ? "Consulta los casos registrados y actualiza su estado de atención."
+              : "Ayúdanos a proteger a los animales. Aquí puedes informar sobre situaciones de riesgo, abandono, maltrato o animales que necesiten ayuda."}
           </Text>
 
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={styles.ctaPrimary}
             activeOpacity={0.85}
-            onPress={() => setModalVisible(true)}
+            onPress={() => setModalMode("denuncia")}
           >
-            <Ionicons
-              name="add-circle-outline"
-              size={21}
-              color={COLORS.onPrimaryContainer}
-            />
-            <Text style={styles.primaryButtonText}>
-              Realizar una denuncia
-            </Text>
+            <Ionicons name="add-circle" size={21} color={COLORS.onLavender} />
+            <Text style={styles.ctaPrimaryText}>Realizar una denuncia</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.ctaSecondary}
+            activeOpacity={0.85}
+            onPress={() => setModalMode("reporte")}
+          >
+            <Ionicons name="flag-outline" size={20} color={COLORS.lavender} />
+            <Text style={styles.ctaSecondaryText}>Realizar un reporte</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ===== ESTADÍSTICAS ===== */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Ionicons
-              name="alert-circle-outline"
-              size={22}
-              color={COLORS.primary}
-            />
-            <Text style={styles.statNumber}>
-              {totalReportes}
-            </Text>
-            <Text style={styles.statLabel}>
-              Denuncias
-            </Text>
+            <Ionicons name="alert-circle-outline" size={22} color={COLORS.error} />
+            <Text style={styles.statNumber}>{totalDenuncias}</Text>
+            <Text style={styles.statLabel}>Denuncias</Text>
           </View>
-
           <View style={styles.statItem}>
-            <Ionicons
-              name="time-outline"
-              size={22}
-              color={COLORS.warning}
-            />
-            <Text style={styles.statNumber}>
-              {totalEnProceso}
-            </Text>
-            <Text style={styles.statLabel}>
-              En proceso
-            </Text>
+            <Ionicons name="flag-outline" size={22} color={COLORS.info} />
+            <Text style={styles.statNumber}>{totalReportesSolo}</Text>
+            <Text style={styles.statLabel}>Reportes</Text>
           </View>
-
           <View style={styles.statItem}>
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={22}
-              color={COLORS.primary}
-            />
-            <Text style={styles.statNumber}>
-              {totalAtendidos}
-            </Text>
-            <Text style={styles.statLabel}>
-              Atendidas
-            </Text>
+            <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.success} />
+            <Text style={styles.statNumber}>{totalAtendidos}</Text>
+            <Text style={styles.statLabel}>Atendidos</Text>
           </View>
         </View>
 
-        {/* ====== BUSCADOR ====== */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>
-            Buscar reportes
-          </Text>
+          <Text style={styles.sectionTitle}>Buscar casos</Text>
           <Text style={styles.sectionSubtitle}>
-            Busca por zona, ciudad, barrio, dirección o animal.
+            Busca por animal, ubicación, tipo, fecha, descripción o estado.
           </Text>
-
           <View style={styles.searchWrap}>
-            <Ionicons
-              name="search"
-              size={18}
-              color={COLORS.onSurfaceVariant}
-            />
+            <Ionicons name="search" size={18} color={COLORS.onSurfaceVariant} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Ej: Bogotá, Suba, perro..."
+              placeholder="Ej: perro, Popayán, abandono..."
               placeholderTextColor={COLORS.onSurfaceVariant}
               value={busqueda}
               onChangeText={setBusqueda}
+              returnKeyType="search"
             />
-            {busqueda.length > 0 && (
+            {!!busqueda && (
               <TouchableOpacity onPress={() => setBusqueda("")}>
-                <Ionicons
-                  name="close-circle"
-                  size={18}
-                  color={COLORS.onSurfaceVariant}
-                />
+                <Ionicons name="close-circle" size={18} color={COLORS.onSurfaceVariant} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/*        FILTROS        */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filtersContainer}
         >
-          {["Todos", "En proceso", "Atendido"].map((opcion) => {
+          {[
+            { value: "Todas", label: "Todas" },
+            { value: "denuncia", label: "Denuncias" },
+            { value: "reporte", label: "Reportes" },
+          ].map((op) => {
+            const activo = filtroCategoria === op.value;
+            return (
+              <TouchableOpacity
+                key={op.value}
+                style={[styles.filterButton, activo && styles.filterButtonActive]}
+                onPress={() => setFiltroCategoria(op.value)}
+              >
+                <Text style={[styles.filterText, activo && styles.filterTextActive]}>
+                  {op.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersContainer}
+        >
+          {["Todos", ...ESTADOS].map((opcion) => {
             const activo = filtro === opcion;
             return (
               <TouchableOpacity
                 key={opcion}
-                style={[
-                  styles.filterButton,
-                  activo && styles.filterButtonActive,
-                ]}
+                style={[styles.filterButton, activo && styles.filterButtonActive]}
                 onPress={() => setFiltro(opcion)}
               >
-                <Text
-                  style={[
-                    styles.filterText,
-                    activo && styles.filterTextActive,
-                  ]}
-                >
+                <Text style={[styles.filterText, activo && styles.filterTextActive]}>
                   {opcion}
                 </Text>
               </TouchableOpacity>
@@ -355,325 +939,315 @@ export default function ReportesScreen() {
           })}
         </ScrollView>
 
-        {/*===== REPORTES =====*/}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionBadge}>
-                REPORTES REGISTRADOS
+                {esAdmin ? "TODOS LOS CASOS" : "TUS REGISTROS"}
               </Text>
-              <Text style={styles.sectionTitle}>
-                Casos recientes
-              </Text>
+              <Text style={styles.sectionTitle}>Casos recientes</Text>
             </View>
-            <Text style={styles.resultCount}>
-              {reportesFiltrados.length}
-            </Text>
+            <Text style={styles.resultCount}>{reportesFiltrados.length}</Text>
           </View>
 
           {reportesFiltrados.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons
-                name="document-text-outline"
-                size={42}
-                color={COLORS.onSurfaceVariant}
-              />
-              <Text style={styles.emptyTitle}>
-                No hay reportes
-              </Text>
+              <Ionicons name="document-text-outline" size={42} color={COLORS.onSurfaceVariant} />
+              <Text style={styles.emptyTitle}>No hay registros</Text>
               <Text style={styles.emptyText}>
                 {busqueda
-                  ? `No encontramos reportes para "${busqueda}".`
-                  : "Todavía no se ha registrado ningún reporte."}
+                  ? `No encontramos resultados para "${busqueda}".`
+                  : "Todavía no hay casos que coincidan con estos filtros."}
               </Text>
+              {(busqueda || filtro !== "Todos" || filtroCategoria !== "Todas") && (
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={() => {
+                    setBusqueda("");
+                    setFiltro("Todos");
+                    setFiltroCategoria("Todas");
+                  }}
+                >
+                  <Text style={styles.secondaryButtonText}>Limpiar filtros</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
-            reportesFiltrados.map((reporte) => (
-              <View key={reporte.id} style={styles.card}>
-                <View style={styles.reportHeader}>
-                  <View style={styles.animalIcon}>
-                    <Ionicons
-                      name="paw-outline"
-                      size={23}
-                      color={COLORS.primary}
-                    />
-                  </View>
-                  <View style={styles.reportHeaderInfo}>
-                    <Text style={styles.cardTitle}>
-                      {reporte.animal}
-                    </Text>
-                    <Text style={styles.dateText}>
-                      {reporte.fecha}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statusTag,
-                      reporte.estado === "Atendido"
-                        ? styles.statusAttended
-                        : styles.statusProcess,
-                    ]}
-                  >
-                    <Text style={styles.statusText}>
-                      {reporte.estado}
-                    </Text>
-                  </View>
-                </View>
+            reportesFiltrados.map((r) => {
+              const esDenuncia = categoriaDe(r) === "denuncia";
+              const estadoColor = colorEstado(r.estado);
+              const estadoNorm = normalizar(r.estado);
+              const acento = esDenuncia ? COLORS.error : COLORS.info;
+              const abierto = expandidoId === r.id;
+              const fotos = Array.isArray(r.fotos) ? r.fotos : [];
 
-                <View style={styles.locationBox}>
-                  <Ionicons
-                    name="location-outline"
-                    size={18}
-                    color={COLORS.primary}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.locationLabel}>
-                      Ubicación
-                    </Text>
-                    <Text style={styles.locationText}>
-                      {reporte.zona}
-                    </Text>
-                  </View>
-                </View>
+              return (
+                <View key={r.id} style={styles.caseCard}>
+                  {/* ---- Parte superior: foto + datos principales ---- */}
+                  <View style={styles.caseTopRow}>
+                    {fotos.length > 0 ? (
+                      <Image source={{ uri: fotos[0] }} style={styles.caseThumb} />
+                    ) : (
+                      <View style={[styles.caseThumb, styles.caseThumbEmpty]}>
+                        <Ionicons name="paw-outline" size={30} color={COLORS.primary} />
+                      </View>
+                    )}
 
-                <Text style={styles.descriptionLabel}>
-                  Descripción
-                </Text>
-                <Text style={styles.description}>
-                  {reporte.descripcion}
-                </Text>
+                    <View style={styles.caseInfo}>
+                      <View style={styles.caseMetaRow}>
+                        <View
+                          style={[
+                            styles.casePill,
+                            {
+                              backgroundColor: `${estadoColor}26`,
+                              borderColor: `${estadoColor}66`,
+                            },
+                          ]}
+                        >
+                          <View style={[styles.casePillDot, { backgroundColor: estadoColor }]} />
+                          <Text style={[styles.casePillText, { color: estadoColor }]}>
+                            {r.estado || "Recibido"}
+                          </Text>
+                        </View>
+                        <Text style={styles.dateText}>{r.fecha}</Text>
+                      </View>
 
-                <View style={styles.actionsRow}>
-                  {reporte.estado !== "Atendido" && (
-                    <TouchableOpacity
-                      style={styles.attendButton}
-                      activeOpacity={0.85}
-                      onPress={() => marcarAtendido(reporte.id)}
-                    >
-                      <Ionicons
-                        name="checkmark-circle-outline"
-                        size={17}
-                        color={COLORS.onPrimaryContainer}
-                      />
-                      <Text style={styles.attendButtonText}>
-                        Marcar como atendido
+                      <Text style={styles.caseTitle} numberOfLines={2}>
+                        {r.animal}
+                        {r.tipoLabel ? ` · ${r.tipoLabel}` : ""}
                       </Text>
-                    </TouchableOpacity>
-                  )}
 
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => confirmarEliminar(reporte.id)}
-                  >
-                    <Ionicons
-                      name="trash-outline"
-                      size={18}
-                      color={COLORS.error}
-                    />
-                  </TouchableOpacity>
+                      <View style={styles.caseLocationRow}>
+                        <Ionicons name="location-outline" size={14} color={COLORS.primary} />
+                        <Text style={styles.caseLocationText} numberOfLines={1}>
+                          {r.zona}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* ---- Pie: categoria + ver seguimiento ---- */}
+                  <View style={styles.caseFooter}>
+                    <View style={styles.caseFooterLeft}>
+                      <Ionicons
+                        name={esDenuncia ? "alert-circle" : "flag"}
+                        size={14}
+                        color={acento}
+                      />
+                      <Text style={[styles.caseFooterLabel, { color: acento }]}>
+                        {esDenuncia ? "Denuncia" : "Reporte"}
+                      </Text>
+                      {!!r.anonimo && (
+                        <View style={styles.anonBadge}>
+                          <Ionicons name="eye-off-outline" size={11} color={COLORS.onSurfaceVariant} />
+                          <Text style={styles.anonBadgeText}>Anónimo</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.caseLink}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      onPress={() => setExpandidoId(abierto ? null : r.id)}
+                    >
+                      <Text style={styles.caseLinkText}>
+                        {abierto ? "Ocultar" : esAdmin ? "Ver detalles" : "Ver seguimiento"}
+                      </Text>
+                      <Ionicons
+                        name={abierto ? "chevron-up" : "chevron-forward"}
+                        size={14}
+                        color={COLORS.lavender}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* ---- Detalle desplegable ---- */}
+                  {abierto && (
+                    <View style={styles.caseExpanded}>
+                      <Text style={styles.descriptionLabel}>Descripción</Text>
+                      <Text style={styles.description}>{r.descripcion}</Text>
+
+                      {Array.isArray(r.detalles) && r.detalles.length > 0 && (
+                        <Text style={styles.detailsText}>{r.detalles.join(" · ")}</Text>
+                      )}
+
+                      {fotos.length > 1 && (
+                        <View style={styles.photoStrip}>
+                          {fotos.map((uri) => (
+                            <Image key={uri} source={{ uri }} style={styles.photoStripItem} />
+                          ))}
+                        </View>
+                      )}
+
+                      {esAdmin ? (
+                        <View style={styles.actionsRow}>
+                          <TouchableOpacity
+                            style={styles.attendButton}
+                            activeOpacity={0.85}
+                            onPress={() => seleccionarEstado(r)}
+                          >
+                            <Ionicons
+                              name="clipboard-outline"
+                              size={17}
+                              color={COLORS.onPrimaryContainer}
+                            />
+                            <Text style={styles.attendButtonText}>Actualizar estado</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => confirmarEliminar(r.id)}
+                          >
+                            <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <View style={styles.trackingBox}>
+                          <Ionicons
+                            name={estadoNorm === "atendido" ? "checkmark-circle-outline" : "time-outline"}
+                            size={21}
+                            color={estadoColor}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.trackingTitle, { color: estadoColor }]}>
+                              Estado: {r.estado || "Recibido"}
+                            </Text>
+                            <Text style={styles.trackingText}>
+                              {estadoNorm === "atendido"
+                                ? "Este caso ha sido marcado como atendido."
+                                : estadoNorm === "en atencion"
+                                  ? "Se están realizando acciones para atender este caso."
+                                  : estadoNorm === "en revision"
+                                    ? "La información de tu caso está siendo revisada."
+                                    : "Tu caso fue recibido y está pendiente de revisión."}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
 
-        {/* ====== MENSAJE FINAL ======*/}
         <View style={styles.helpCard}>
           <View style={styles.helpIcon}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={25}
-              color={COLORS.primary}
-            />
+            <Ionicons name="shield-checkmark-outline" size={25} color={COLORS.primary} />
           </View>
           <View style={styles.helpContent}>
-            <Text style={styles.helpTitle}>
-              Tu denuncia puede salvar una vida
-            </Text>
+            <Text style={styles.helpTitle}>Tu reporte puede ayudar a salvar una vida</Text>
             <Text style={styles.helpText}>
-              Si presencias maltrato o abandono animal,
-              repórtalo para que pueda ser atendido.
+              Registra informacion clara para facilitar el seguimiento de cada caso.
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* ====== MODAL PARA CREAR REPORTE ====== */}
       <Modal
-        visible={modalVisible}
+        visible={modalMode !== null}
         animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
+        transparent
+        onRequestClose={() => setModalMode(null)}
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
-
-            {/* HEADER FIJO */}
             <View style={styles.modalHeader}>
               <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={styles.modalTitle}>Nueva denuncia</Text>
+                <Text style={styles.modalTitle}>
+                  {modalMode === "denuncia" ? "Nueva denuncia" : "Nuevo reporte"}
+                </Text>
                 <Text style={styles.modalSubtitle}>
-                  Su reporte puede salvar una vida. Complete el formulario con la mayor precisión posible.
+                  {modalMode === "denuncia"
+                    ? "Describe la situacion con la mayor precisión posible. La información debe tratarse con responsabilidad."
+                    : "Reporta animales perdidos, encontrados o que necesiten ayuda. Los campos con * son obligatorios."}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={() => setModalMode(null)}>
                 <Ionicons name="close" size={27} color={COLORS.onSurface} />
               </TouchableOpacity>
             </View>
 
-            {/* TODO LO DEMÁS VA DENTRO DEL SCROLLVIEW */}
             <ScrollView
               style={{ flexShrink: 1 }}
-              showsVerticalScrollIndicator={true}
+              showsVerticalScrollIndicator
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.modalScrollContent}
             >
-              {/* Denuncia segura */}
-              <View style={styles.card}>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIconWrap}>
-                    <MaterialIcons name="security" size={22} color={COLORS.primary} />
+              {modalMode === "denuncia" && (
+                <>
+                  <View style={styles.card}>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoIconWrap}>
+                        <Ionicons
+                          name="shield-checkmark-outline"
+                          size={22}
+                          color={COLORS.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.infoTitle}>Manejo responsable de la información</Text>
+                        <Text style={styles.infoText}>
+                          Comparte unicamente informacion necesaria para atender el caso.
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.infoTitle}>Denuncia Segura y Anónima</Text>
-                    <Text style={styles.infoText}>
-                      Toda la información proporcionada es estrictamente confidencial.
-                    </Text>
-                  </View>
-                </View>
-              </View>
+                  <DenunciaForm onSubmit={agregarRegistro} onInvitado={verificarInvitado} />
+                </>
+              )}
 
-              {/* Tipo de situación */}
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Tipo de Situación</Text>
-                </View>
-
-                <View style={styles.typeList}>
-                  {REPORT_TYPES.map((type, index) => {
-                    const selected = reportType === type.id;
-
-                    return (
-                      <TouchableOpacity
-                        key={type.id}
-                        style={[
-                          styles.typeItem,
-                          selected && styles.typeItemSelected,
-                          index === REPORT_TYPES.length - 1 && styles.typeItemLast,
-                        ]}
-                        activeOpacity={0.8}
-                        onPress={() => setReportType(type.id)}
-                      >
-                        <View style={styles.typeItemLeft}>
-                          <View
-                            style={[
-                              styles.typeIcon,
-                              selected && styles.typeIconSelected,
-                            ]}
-                          >
-                            <MaterialIcons
-                              name={type.icon}
-                              size={21}
-                              color={
-                                selected
-                                  ? COLORS.primary
-                                  : COLORS.onSurfaceVariant
-                              }
-                            />
-                          </View>
-
-                          <Text
-                            style={[
-                              styles.typeLabel,
-                              selected && styles.typeLabelSelected,
-                            ]}
-                          >
-                            {type.label}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={[
-                            styles.radio,
-                            selected && styles.radioSelected,
-                          ]}
-                        >
-                          {selected && (
-                            <MaterialIcons
-                              name="check"
-                              size={16}
-                              color="#FFFFFF"
-                            />
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Animal */}
-              <Text style={styles.animalTitle}>Animal</Text>
-              <View style={styles.animalOptions}>
-                {["Perro", "Gato", "Otro"].map((opcion) => {
-                  const activo = animal === opcion;
-                  return (
-                    <TouchableOpacity
-                      key={opcion}
-                      style={[styles.animalOption, activo && styles.animalOptionActive]}
-                      onPress={() => setAnimal(opcion)}
-                    >
-                      <Ionicons
-                        name="paw-outline"
-                        size={18}
-                        color={activo ? COLORS.onPrimaryContainer : COLORS.onSurfaceVariant}
-                      />
-                      <Text
-                        style={[
-                          styles.animalOptionText,
-                          activo && styles.animalOptionTextActive,
-                        ]}
-                      >
-                        {opcion}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Zona */}
-              <Text style={styles.inputLabel}>Zona / ciudad / barrio / dirección</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ej: Suba, Bogotá"
-                placeholderTextColor={COLORS.onSurfaceVariant}
-                value={zona}
-                onChangeText={setZona}
-              />
-
-              {/* Descripción (un solo campo) */}
-              <Text style={styles.inputLabel}>Descripción del caso</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Describe qué está ocurriendo y el estado del animal..."
-                placeholderTextColor={COLORS.onSurfaceVariant}
-                value={descripcion}
-                onChangeText={setDescripcion}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-
-              {/* Registrar */}
-              <TouchableOpacity
-                style={styles.saveButton}
-                activeOpacity={0.85}
-                onPress={crearReporte}
-              >
-                <Ionicons name="send-outline" size={19} color={COLORS.onPrimaryContainer} />
-                <Text style={styles.saveButtonText}>Registrar denuncia</Text>
-              </TouchableOpacity>
+              {modalMode === "reporte" && (
+                <ReporteForm onSubmit={agregarRegistro} onInvitado={verificarInvitado} />
+              )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={mostrarModalInvitado}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setMostrarModalInvitado(false)}
+      >
+        <View style={styles.invitadoBackground}>
+          <View style={styles.invitadoContainer}>
+
+            <Ionicons
+              name="lock-closed-outline"
+              size={44}
+              color={COLORS.warning}
+              style={styles.invitadoIcon}
+            />
+
+            <Text style={styles.invitadoTitle}>Acción Restringida</Text>
+
+            <Text style={styles.invitadoSubtitle}>
+              Debes iniciar sesión o registrarte para poder registrar un caso o denuncia en la plataforma.
+            </Text>
+
+            {/* Botón Iniciar Sesión */}
+            <TouchableOpacity
+              style={styles.invitadoLoginBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                setMostrarModalInvitado(false);
+                router.push("/(auth)/login");
+              }}
+            >
+              <Text style={styles.invitadoLoginText}>Iniciar Sesión</Text>
+            </TouchableOpacity>
+
+            {/* Botón Cancelar */}
+            <TouchableOpacity
+              style={styles.invitadoCancelBtn}
+              activeOpacity={0.85}
+              onPress={() => setMostrarModalInvitado(false)}
+            >
+              <Text style={styles.invitadoCancelText}>Tal vez más tarde</Text>
+            </TouchableOpacity>
 
           </View>
         </View>

@@ -5,7 +5,7 @@ const MenuContext = createContext(null);
 export function MenuProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openMenu = () => setIsOpen(true);
+  const openMenu = () => setIsOpen(true);                     
   const closeMenu = () => setIsOpen(false);
   const toggleMenu = () => setIsOpen((prev) => !prev);
 
@@ -13,7 +13,7 @@ export function MenuProvider({ children }) {
     <MenuContext.Provider value={{ isOpen, openMenu, closeMenu, toggleMenu }}>
       {children}
     </MenuContext.Provider>
-  );
+  );    
 }
 
 export function useMenu() {

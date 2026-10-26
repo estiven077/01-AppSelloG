@@ -1,4 +1,4 @@
-  import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -23,9 +23,8 @@ import { useMenu } from "../../context/menuContext";
 // Importa tu nuevo componente Navbar reutilizable
 import Navbar from "../../components/Navbar";
 
-
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
- 
+
 const COLORS = {
   primary: "#7C3AED",
   primaryContainer: "#7C3AED",
@@ -38,8 +37,9 @@ const COLORS = {
   cardBg: "rgba(15, 23, 42, 0.75)",
   cardBorder: "rgba(255, 255, 255, 0.12)", 
   success: "#10B981",
+  error: "#ef4444",
 };
- 
+
 const REPORTS = [
   {
     id: "r1",
@@ -58,7 +58,7 @@ const REPORTS = [
       { label: "URGENTE", color: "#ef4444" },
       { label: "MALTRATO", color: "#f97316" },
     ],
-  }, 
+  },
 ];
 
 const PETS = [
@@ -67,20 +67,22 @@ const PETS = [
     name: "Luna",
     info: "Labrador • 2 años • Popayán",
     breed: "Labrador Retriever",
+    type: "Perros", // Añadido para asegurar compatibilidad con categorías de Favoritos
     age: "2 años",
     gender: "Hembra",
+    location: "Popayán",
     status: "En Adopción",
     vaccines: "Al día (Rabia, Parvovirus)",
     medicalHistory: "Esterilizada, excelente salud general.",
     history: "Es una perrita muy juguetona, cariñosa y llena de energía.",
     image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80",
     tag: { label: "URGENTE", color: "#ef4444" },
-  }, 
+  },
 ];
 
 export default function Home() {
   const router = useRouter();
- 
+  
   const [adoptadosCount, setAdoptadosCount] = useState(0);
   const [denunciasCount, setDenunciasCount] = useState(0);
   const [voluntariosCount, setVoluntariosCount] = useState(0); 
@@ -96,8 +98,20 @@ export default function Home() {
     pet.name.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  function toggleFavorito(id) {
-    setFavoritos((prev) => ({ ...prev, [id]: !prev[id] }));
+  // Función corregida y completa para manejar el estado y la navegación con timestamp (t)
+  function toggleFavorito(pet) {
+    const isFav = !favoritos[pet.id];
+    setFavoritos((prev) => ({ ...prev, [pet.id]: isFav }));
+
+    if (isFav) {
+      router.push({
+        pathname: "/(tabs)/Favoritos",
+        params: { 
+          newPet: JSON.stringify(pet),
+          t: Date.now().toString(), // Obliga a la pantalla de favoritos a capturar el evento aunque sea la misma mascota
+        },
+      });
+    }
   }
 
   function verDetalleReporte(report) {
@@ -112,6 +126,11 @@ export default function Home() {
     setReporteSeleccionado(null);
     setMascotaSeleccionada(null);
     Alert.alert("Formulario de Adopción", `Iniciando formulario para ${item?.name || "esta mascota"}.`);
+  }
+
+  // Ruta corregida a Adopcion.js dentro de (tabs)
+  function irAAdopcion() {
+    router.push("/(tabs)/Adopcion");
   }
 
   return (
@@ -136,7 +155,7 @@ export default function Home() {
             <TouchableOpacity
               style={styles.primaryButton}
               activeOpacity={0.85}
-              onPress={() => router.push("/(tabs)/Mascotas")}
+              onPress={irAAdopcion}
             >
               <Text style={styles.primaryButtonText}>Adoptar ahora</Text>
             </TouchableOpacity>
@@ -260,7 +279,7 @@ export default function Home() {
                         <TouchableOpacity
                           style={styles.favButton}
                           activeOpacity={0.8}
-                          onPress={() => toggleFavorito(pet.id)}
+                          onPress={() => toggleFavorito(pet)}
                         >
                           <Ionicons
                             name={esFavorito ? "heart" : "heart-outline"}
@@ -289,11 +308,11 @@ export default function Home() {
             </ScrollView>
           )}
 
-          {/* BOTÓN NAVEGAR A MÁS MASCOTAS */}
+          {/* BOTÓN NAVEGAR A ADOPCION */}
           <TouchableOpacity
             style={styles.seeMorePetsButton}
             activeOpacity={0.85}
-            onPress={() => router.push("/(tabs)/Mascotas")}
+            onPress={irAAdopcion}
           >
             <Text style={styles.seeMorePetsButtonText}>Ver más mascotas</Text>
             <Ionicons name="arrow-forward" size={18} color={COLORS.onPrimaryContainer} />
@@ -326,7 +345,7 @@ export default function Home() {
                 <Ionicons name="close" size={20} color={COLORS.onSurface} />
               </TouchableOpacity>
             </View>
- 
+
             <View style={styles.modalTopRow}>
               <View style={styles.modalInfoContainer}>
                 <View style={styles.infoRow}>
@@ -357,7 +376,7 @@ export default function Home() {
                 style={styles.modalImage}
               />
             </View>
- 
+
             <View style={styles.healthContainer}>
               <View style={styles.healthItem}>
                 <Text style={styles.healthLabel}>💉 Vacunas:</Text>
@@ -369,7 +388,7 @@ export default function Home() {
                 <Text style={styles.healthText}>{reporteSeleccionado?.medicalHistory}</Text>
               </View>
             </View>
- 
+
             <View style={styles.historyContainer}>
               <Text style={styles.historyLabel}>Antecedentes / Rescate:</Text>
               <Text style={styles.historyText}>
@@ -492,8 +511,7 @@ export default function Home() {
       </Modal>
     </SafeAreaView>
   );
-}
-
+} 
 
 const styles = StyleSheet.create({
   container: {
