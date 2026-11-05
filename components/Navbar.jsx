@@ -1,35 +1,60 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useTheme } from "../context/ThemeContext";
 
-// Importa tu logo (ajusta la ruta según la ubicación de tu archivo components/)
+// Importamos el logo
 import logoSello from "../assets/LogoSelloG.png";
-
-const COLORS = {
-  primary: "#7C3AED",
-  surface: "#0F172A",
-  onSurface: "#FFFFFF",
-  onSurfaceVariant: "#C4B5FD",
-  cardBorder: "rgba(255, 255, 255, 0.12)",
-  error: "#E11D48",
-};
 
 export default function Navbar({ unreadNotifications = 2 }) {
   const router = useRouter();
+  const { theme, colors } = useTheme();
 
+  const isDark = theme === "dark";
+  // Colores adaptados al tema seleccionado (Modo claro/oscuro)
+  const navbarBg = colors.navbar;
+  const navbarBorder = colors.border;
+  const textColor = colors.textLight;
+
+  // Abrir el menu lateral
   const abrirMenuLateral = () => {
     router.push("/drawer");
   };
 
   return (
-    <View style={styles.navbar}>
+    <View
+      style={[
+        styles.navbar,
+        {
+          backgroundColor: navbarBg,
+          borderBottomColor: navbarBorder,
+          
+          // Sombra suave debajo del navbar
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: theme === "dark" ? 0.30 : 0.10,
+          shadowRadius: 5,
+
+          // Sombra para Android
+          elevation: 5,
+
+          // Evita que la sombra interfiera con el contenido
+          zIndex: 10,
+        },
+      ]}
+    >
+      {/* Logo y nombre de la aplicación */}
       <View style={styles.brandContainer}>
         <TouchableOpacity
           onPress={abrirMenuLateral}
-          style={{ marginRight: 12, padding: 4 }}
+          style={styles.menuButton}
         >
-          <Ionicons name="menu-outline" size={26} color={COLORS.onSurface} />
+          <Ionicons
+            name="menu-outline"
+            size={26}
+            color={textColor}
+          />
         </TouchableOpacity>
 
         <Image
@@ -38,9 +63,12 @@ export default function Navbar({ unreadNotifications = 2 }) {
           resizeMode="contain"
         />
 
-        <Text style={styles.brandTitle}>SELLO GUARDIÁN</Text>
+        <Text style={[styles.brandTitle, { color: textColor }]}>
+          SELLO GUARDIÁN
+        </Text>
       </View>
 
+      {/* Botones de notificaciones y perfil */}
       <View style={styles.navActions}>
         <TouchableOpacity
           style={styles.navButton}
@@ -50,8 +78,14 @@ export default function Navbar({ unreadNotifications = 2 }) {
             <Ionicons
               name="notifications-outline"
               size={24}
-              color={unreadNotifications > 0 ? COLORS.error : COLORS.onSurface}
+              color={
+                unreadNotifications > 0
+                  ? "#EF4444"
+                  : textColor
+              }
             />
+
+            {/* Mostrar el número de notificaciones sin leer */}
             {unreadNotifications > 0 && (
               <View style={styles.notificationBadge}>
                 <Text style={styles.notificationBadgeText}>
@@ -69,7 +103,7 @@ export default function Navbar({ unreadNotifications = 2 }) {
           <Ionicons
             name="person-circle-outline"
             size={26}
-            color={COLORS.primary}
+            color={colors.activePurple}
           />
         </TouchableOpacity>
       </View>
@@ -80,52 +114,53 @@ export default function Navbar({ unreadNotifications = 2 }) {
 const styles = StyleSheet.create({
   navbar: {
     flexDirection: "row",
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
   brandContainer: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
+  },
+  menuButton: {
+    padding: 4,
   },
   logoImage: {
-    width: 28,
-    height: 28,
-    marginRight: 8,
+    width: 30,
+    height: 30,
   },
   brandTitle: {
-    color: COLORS.primary,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "bold",
     letterSpacing: 0.5,
   },
   navActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
   },
   navButton: {
     padding: 4,
+    position: "relative",
   },
   notificationBadge: {
     position: "absolute",
-    top: -4,
-    right: -6,
-    backgroundColor: COLORS.error,
-    borderRadius: 9,
-    minWidth: 18,
-    height: 18,
+    top: -2,
+    right: -2,
+    backgroundColor: "#EF4444",
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 3,
   },
   notificationBadgeText: {
     color: "#FFFFFF",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "bold",
   },
 });

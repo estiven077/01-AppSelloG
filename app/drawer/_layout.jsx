@@ -1,4 +1,3 @@
-import React from "react";
 import { Stack } from "expo-router";
 
 export default function DrawerLayout() {
@@ -6,6 +5,8 @@ export default function DrawerLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        animation: "fade",
+        contentStyle: { backgroundColor: "transparent" },
       }}
     />
   );

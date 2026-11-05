@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
+  TextInput,    
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
@@ -17,30 +17,26 @@ import * as ImagePicker from "expo-image-picker"; // npx expo install expo-image
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router"; // IMPORTANTE: Para la navegacion
 import { useAuth } from "../../context/AuthContext"; // IMPORTANTE: Cambia la ruta segun tu proyecto
-
+import { useTheme } from "../../context/ThemeContext"; // Hook de temas
 
 import Navbar from "../../components/Navbar";
 import { styles } from "../../styles/Reportes.js";
 
-const COLORS = {
-  primary: "#a855f7",
-  primaryContainer: "#9333ea",
-  onPrimaryContainer: "#ffffff",
-  surface: "#111414",
-  surfaceContainer: "#1d2020",
-  onSurface: "#e1e3e2",
-  onSurfaceVariant: "#d1ddd1",
-  cardBg: "rgba(255, 255, 255, 0.06)",
-  cardBorder: "rgba(255, 255, 255, 0.14)",
+const STORAGE_KEY = "@sello_guardian_reportes";
+
+// Colores de respaldo por si tu ThemeContext no los define
+const FALLBACK_COLORS = {
+  success: "#22c55e",
   error: "#ef4444",
   warning: "#f39c12",
   info: "#3b82f6",
-  success: "#22c55e",
-  lavender: "#a78bfa", // botones y acentos del prototipo
-  onLavender: "#1e1038", // texto sobre lavender
 };
 
-const STORAGE_KEY = "@sello_guardian_reportes";
+// Devuelve los colores del tema + los de respaldo
+function useColores() {
+  const { colors } = useTheme();
+  return { ...FALLBACK_COLORS, ...colors };
+}
 
 const TIPOS_DENUNCIA = [
   { value: "abuso", label: "Abuso físico" },
@@ -98,6 +94,7 @@ function SelectField({
   onToggle,
   error,
 }) {
+  const colors = useColores();
   const selected = options.find((o) => o.value === value);
 
   return (
@@ -105,31 +102,46 @@ function SelectField({
       <TouchableOpacity
         style={[
           styles.inputContainerOutline,
+          { backgroundColor: colors.surface, borderColor: colors.border },
           !!error && styles.inputError,
         ]}
         onPress={onToggle}
         activeOpacity={0.8}
       >
-        <Ionicons name={icon} size={20} color={COLORS.onSurfaceVariant} />
-        <Text style={[styles.selectText, !selected && styles.placeholderText]}>
+        <Ionicons name={icon} size={20} color={colors.textMuted} />
+        <Text
+          style={[
+            styles.selectText,
+            { color: colors.textLight },
+            !selected && styles.placeholderText,
+            !selected && { color: colors.textMuted },
+          ]}
+        >
           {selected ? selected.label : placeholder}
         </Text>
         <Ionicons
           name={isOpen ? "chevron-up-outline" : "chevron-down-outline"}
           size={18}
-          color={COLORS.onSurfaceVariant}
+          color={colors.textMuted}
         />
       </TouchableOpacity>
 
       {isOpen && (
-        <View style={styles.dropdownMenu}>
+        <View
+          style={[
+            styles.dropdownMenu,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           {options.map((item) => (
             <TouchableOpacity
               key={item.value}
-              style={styles.dropdownItem}
+              style={[styles.dropdownItem, { borderBottomColor: colors.border }]}
               onPress={() => onSelect(item.value)}
             >
-              <Text style={styles.dropdownItemText}>{item.label}</Text>
+              <Text style={[styles.dropdownItemText, { color: colors.textLight }]}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -149,11 +161,13 @@ function TextField({
   multiline = false,
   keyboardType = "default",
 }) {
+  const colors = useColores();
   return (
     <View style={styles.group}>
       <View
         style={[
           styles.inputContainerOutline,
+          { backgroundColor: colors.surface, borderColor: colors.border },
           multiline && styles.inputContainerMultiline,
           !!error && styles.inputError,
         ]}
@@ -161,13 +175,17 @@ function TextField({
         <Ionicons
           name={icon}
           size={20}
-          color={COLORS.onSurfaceVariant}
+          color={colors.textMuted}
           style={multiline ? { marginTop: 6 } : null}
         />
         <TextInput
-          style={[styles.inputText, multiline && styles.inputTextMultiline]}
+          style={[
+            styles.inputText,
+            { color: colors.textLight },
+            multiline && styles.inputTextMultiline,
+          ]}
           placeholder={placeholder}
-          placeholderTextColor={COLORS.onSurfaceVariant}
+          placeholderTextColor={colors.textMuted}
           value={value}
           onChangeText={onChangeText}
           multiline={multiline}
@@ -188,6 +206,7 @@ const MAX_FOTOS = 5;
 const ERROR_FOTOS = `Agrega mínimo ${MIN_FOTOS} fotos como evidencia`;
 
 function EvidenciaPicker({ fotos, onChange, error }) {
+  const colors = useColores();
   const quitar = (uri) => onChange(fotos.filter((f) => f !== uri));
 
   const desdeGaleria = async () => {
@@ -238,22 +257,31 @@ function EvidenciaPicker({ fotos, onChange, error }) {
 
   return (
     <View style={styles.group}>
-      <View style={[styles.evidenceBox, !!error && styles.evidenceBoxError]}>
+      <View
+        style={[
+          styles.evidenceBox,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          !!error && styles.evidenceBoxError,
+        ]}
+      >
         <View style={styles.evidenceHeader}>
           <View style={styles.evidenceTitleRow}>
-            <Ionicons name="camera-outline" size={20} color={COLORS.success} />
-            <Text style={styles.evidenceTitle}>Evidencia visual *</Text>
+            <Ionicons name="camera-outline" size={20} color={colors.success} />
+            <Text style={[styles.evidenceTitle, { color: colors.textLight }]}>
+              Evidencia visual *
+            </Text>
           </View>
           <Text
             style={[
               styles.evidenceCount,
-              completo && { color: COLORS.success },
+              { color: colors.textMuted },
+              completo && { color: colors.success },
             ]}
           >
             {fotos.length} de {MAX_FOTOS} fotos
           </Text>
         </View>
-        <Text style={styles.evidenceHint}>
+        <Text style={[styles.evidenceHint, { color: colors.textMuted }]}>
           Mínimo {MIN_FOTOS} fotos, máximo {MAX_FOTOS}.
         </Text>
 
@@ -272,9 +300,18 @@ function EvidenciaPicker({ fotos, onChange, error }) {
           ))}
 
           {fotos.length < MAX_FOTOS && (
-            <TouchableOpacity style={styles.evidenceAdd} activeOpacity={0.8} onPress={agregar}>
-              <Ionicons name="camera-outline" size={22} color={COLORS.onSurfaceVariant} />
-              <Text style={styles.evidenceAddText}>Agregar</Text>
+            <TouchableOpacity
+              style={[
+                styles.evidenceAdd,
+                { backgroundColor: colors.background, borderColor: colors.border },
+              ]}
+              activeOpacity={0.8}
+              onPress={agregar}
+            >
+              <Ionicons name="camera-outline" size={22} color={colors.textMuted} />
+              <Text style={[styles.evidenceAddText, { color: colors.textMuted }]}>
+                Agregar
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -287,19 +324,27 @@ function EvidenciaPicker({ fotos, onChange, error }) {
 /*     SWITCH DE REPORTE ANÓNIMO     */
 
 function AnonimoToggle({ value, onChange }) {
+  const colors = useColores();
   return (
-    <View style={styles.anonRow}>
+    <View
+      style={[
+        styles.anonRow,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
       <View style={styles.anonIconWrap}>
-        <Ionicons name="eye-off-outline" size={20} color={COLORS.onSurfaceVariant} />
+        <Ionicons name="eye-off-outline" size={20} color={colors.textMuted} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.anonTitle}>Reporte anónimo</Text>
-        <Text style={styles.anonSubtitle}>Tu identidad estará protegida ante terceros</Text>
+        <Text style={[styles.anonTitle, { color: colors.textLight }]}>Reporte anónimo</Text>
+        <Text style={[styles.anonSubtitle, { color: colors.textMuted }]}>
+          Tu identidad estará protegida ante terceros
+        </Text>
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: "rgba(255,255,255,0.18)", true: COLORS.primaryContainer }}
+        trackColor={{ false: colors.border, true: colors.activePurple }}
         thumbColor="#ffffff"
       />
     </View>
@@ -309,13 +354,18 @@ function AnonimoToggle({ value, onChange }) {
 /*     BOTÓN DE ENVÍO (estilo prototipo)     */
 
 function BotonEnviar({ texto, onPress }) {
+  const colors = useColores();
   return (
     <>
-      <TouchableOpacity style={styles.submitButton} activeOpacity={0.85} onPress={onPress}>
-        <Ionicons name="send-outline" size={19} color={COLORS.onLavender} />
-        <Text style={styles.submitButtonText}>{texto}</Text>
+      <TouchableOpacity
+        style={[styles.submitButton, { backgroundColor: colors.activePurple }]}
+        activeOpacity={0.85}
+        onPress={onPress}
+      >
+        <Ionicons name="send-outline" size={19} color="#ffffff" />
+        <Text style={[styles.submitButtonText, { color: "#ffffff" }]}>{texto}</Text>
       </TouchableOpacity>
-      <Text style={styles.submitNote}>
+      <Text style={[styles.submitNote, { color: colors.textMuted }]}>
         Al enviar, se alertará de inmediato a la red de rescatistas y cuadrilla de bienestar animal
         en Popayán.
       </Text>
@@ -642,6 +692,8 @@ export default function ReportesScreen() {
 
   const { user } = useAuth(); // Trae el usuario logueado
   const router = useRouter(); // Llama al enrutador
+  const { theme } = useTheme(); // Modo actual: "dark" | "light"
+  const colors = useColores(); // Colores del tema actual
   const [mostrarModalInvitado, setMostrarModalInvitado] = useState(false); // Controla el aviso visual
 
   const esAdmin = user?.role === "admin" || user?.role === "fundacion";
@@ -651,6 +703,7 @@ export default function ReportesScreen() {
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState("Todos");
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
+  const [mostrarFiltros, setMostrarFiltros] = useState(false); // Panel de filtros por estado
   const [modalMode, setModalMode] = useState(null);
   const [expandidoId, setExpandidoId] = useState(null);
 
@@ -803,17 +856,28 @@ export default function ReportesScreen() {
     return coincideBusqueda && coincideEstado && coincideCategoria;
   });
 
+  const hayFiltros = !!busqueda || filtro !== "Todos" || filtroCategoria !== "Todas";
+
+  const limpiarFiltros = () => {
+    setBusqueda("");
+    setFiltro("Todos");
+    setFiltroCategoria("Todas");
+  };
+
   const colorEstado = (estado) => {
     const e = normalizar(estado);
-    if (e === "atendido") return COLORS.success;
-    if (e === "en atencion") return COLORS.warning;
-    if (e === "en revision") return COLORS.info;
-    return COLORS.primary;
+    if (e === "atendido") return colors.success;
+    if (e === "en atencion") return colors.warning;
+    if (e === "en revision") return colors.info;
+    return colors.activePurple;
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.surface} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
       <Navbar unreadNotifications={0} />
 
       <ScrollView
@@ -821,118 +885,202 @@ export default function ReportesScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <Text style={styles.sectionBadge}>
+          <Text style={[styles.sectionBadge, { color: colors.activePurple }]}>
             {esAdmin ? "PANEL DE GESTIÓN" : "SEGUIMIENTO COMUNITARIO"}
           </Text>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, { color: colors.textLight }]}>
             {esAdmin ? "Reportes y Denuncias" : "Mis reportes y denuncias"}
           </Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
             {esAdmin
-              ? "Consulta los casos registrados y actualiza su estado de atención."
-              : "Ayúdanos a proteger a los animales. Aquí puedes informar sobre situaciones de riesgo, abandono, maltrato o animales que necesiten ayuda."}
-          </Text>
+              ? "Gestiona las denuncias y reportes recibidos, revisa los casos y actualiza su estado."
+              : "Ayúdanos a proteger a los animales. Aquí puedes informar sobre situaciones de riesgo, abandono, maltrato o animales que necesiten ayuda."}          </Text>
 
           <TouchableOpacity
-            style={styles.ctaPrimary}
+            style={[styles.ctaPrimary, { backgroundColor: colors.activePurple }]}
             activeOpacity={0.85}
             onPress={() => setModalMode("denuncia")}
           >
-            <Ionicons name="add-circle" size={21} color={COLORS.onLavender} />
-            <Text style={styles.ctaPrimaryText}>Realizar una denuncia</Text>
+            <Ionicons name="add-circle" size={21} color="#ffffff" />
+            <Text style={[styles.ctaPrimaryText, { color: "#ffffff" }]}>
+              Realizar una denuncia
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.ctaSecondary}
+            style={[
+              styles.ctaSecondary,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
             activeOpacity={0.85}
             onPress={() => setModalMode("reporte")}
           >
-            <Ionicons name="flag-outline" size={20} color={COLORS.lavender} />
-            <Text style={styles.ctaSecondaryText}>Realizar un reporte</Text>
+            <Ionicons name="flag-outline" size={20} color={colors.activePurple} />
+            <Text style={[styles.ctaSecondaryText, { color: colors.textLight }]}>
+              Realizar un reporte
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.statsRow}>
+        <View
+          style={[
+            styles.statsRow,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           <View style={styles.statItem}>
-            <Ionicons name="alert-circle-outline" size={22} color={COLORS.error} />
-            <Text style={styles.statNumber}>{totalDenuncias}</Text>
-            <Text style={styles.statLabel}>Denuncias</Text>
+            <Ionicons name="alert-circle-outline" size={22} color={colors.error} />
+            <Text style={[styles.statNumber, { color: colors.textLight }]}>{totalDenuncias}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Denuncias</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="flag-outline" size={22} color={COLORS.info} />
-            <Text style={styles.statNumber}>{totalReportesSolo}</Text>
-            <Text style={styles.statLabel}>Reportes</Text>
+            <Ionicons name="flag-outline" size={22} color={colors.info} />
+            <Text style={[styles.statNumber, { color: colors.textLight }]}>{totalReportesSolo}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Reportes</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.success} />
-            <Text style={styles.statNumber}>{totalAtendidos}</Text>
-            <Text style={styles.statLabel}>Atendidos</Text>
+            <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
+            <Text style={[styles.statNumber, { color: colors.textLight }]}>{totalAtendidos}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Atendidos</Text>
           </View>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Buscar casos</Text>
-          <Text style={styles.sectionSubtitle}>
-            Busca por animal, ubicación, tipo, fecha, descripción o estado.
-          </Text>
-          <View style={styles.searchWrap}>
-            <Ionicons name="search" size={18} color={COLORS.onSurfaceVariant} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Ej: perro, Popayán, abandono..."
-              placeholderTextColor={COLORS.onSurfaceVariant}
-              value={busqueda}
-              onChangeText={setBusqueda}
-              returnKeyType="search"
-            />
-            {!!busqueda && (
-              <TouchableOpacity onPress={() => setBusqueda("")}>
-                <Ionicons name="close-circle" size={18} color={COLORS.onSurfaceVariant} />
-              </TouchableOpacity>
-            )}
+        {/* ================= BUSCADOR + FILTROS ================= */}
+        <View style={styles.busWrapper}>
+          {/* Barra de búsqueda + botón de filtros */}
+          <View style={styles.busRow}>
+            <View
+              style={[
+                styles.busPill,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Ionicons name="search" size={22} color={colors.textLight} />
+              <TextInput
+                style={[styles.busInput, { color: colors.textLight }]}
+                placeholder="Ej: perro, Popayán, abandono..."
+                placeholderTextColor={colors.textMuted}
+                value={busqueda}
+                onChangeText={setBusqueda}
+                returnKeyType="search"
+              />
+              {!!busqueda && (
+                <TouchableOpacity onPress={() => setBusqueda("")}>
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.busFilterBtn, { backgroundColor: colors.activePurple }]}
+              activeOpacity={0.85}
+              onPress={() => setMostrarFiltros((v) => !v)}
+            >
+              <Ionicons
+                name={mostrarFiltros ? "close" : "options-outline"}
+                size={22}
+                color="#ffffff"
+              />
+              {filtro !== "Todos" && !mostrarFiltros && <View style={styles.busFilterDot} />}
+            </TouchableOpacity>
           </View>
+
+          {/* Panel de estados (se abre con el botón morado) */}
+          {mostrarFiltros && (
+            <View
+              style={[
+                styles.busPanel,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.busPanelHeader}>
+                <Text style={[styles.busPanelTitle, { color: colors.textLight }]}>
+                  Filtrar por estado
+                </Text>
+                {hayFiltros && (
+                  <TouchableOpacity
+                    onPress={limpiarFiltros}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={[styles.busClear, { color: colors.activePurple }]}>
+                      Limpiar filtros
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.busWrap}>
+                {["Todos", ...ESTADOS].map((opcion) => {
+                  const activo = filtro === opcion;
+                  return (
+                    <TouchableOpacity
+                      key={opcion}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.busChipEstado,
+                        {
+                          backgroundColor: activo ? colors.activePurple : colors.background,
+                          borderColor: activo ? colors.activePurple : colors.border,
+                        },
+                      ]}
+                      onPress={() => setFiltro(opcion)}
+                    >
+                      <Text
+                        style={[
+                          styles.busChipText,
+                          { color: activo ? "#ffffff" : colors.textMuted },
+                        ]}
+                      >
+                        {opcion}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Categorías */}
+          <Text style={[styles.busCategoriesTitle, { color: colors.textLight }]}>
+            Categorías
+          </Text>
         </View>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersContainer}
+          contentContainerStyle={styles.busChipsRow}
         >
           {[
-            { value: "Todas", label: "Todas" },
-            { value: "denuncia", label: "Denuncias" },
-            { value: "reporte", label: "Reportes" },
+            { value: "Todas", label: "Todas", icon: "apps-outline" },
+            { value: "denuncia", label: "Denuncias", icon: "alert-circle-outline" },
+            { value: "reporte", label: "Reportes", icon: "flag-outline" },
           ].map((op) => {
             const activo = filtroCategoria === op.value;
             return (
               <TouchableOpacity
                 key={op.value}
-                style={[styles.filterButton, activo && styles.filterButtonActive]}
+                activeOpacity={0.85}
+                style={[
+                  styles.busChip,
+                  {
+                    backgroundColor: activo ? colors.activePurple : colors.surface,
+                    borderColor: activo ? colors.activePurple : colors.border,
+                  },
+                ]}
                 onPress={() => setFiltroCategoria(op.value)}
               >
-                <Text style={[styles.filterText, activo && styles.filterTextActive]}>
+                <Ionicons
+                  name={op.icon}
+                  size={20}
+                  color={activo ? "#ffffff" : colors.activePurple}
+                />
+                <Text
+                  style={[
+                    styles.busChipText,
+                    { color: activo ? "#ffffff" : colors.textLight },
+                  ]}
+                >
                   {op.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersContainer}
-        >
-          {["Todos", ...ESTADOS].map((opcion) => {
-            const activo = filtro === opcion;
-            return (
-              <TouchableOpacity
-                key={opcion}
-                style={[styles.filterButton, activo && styles.filterButtonActive]}
-                onPress={() => setFiltro(opcion)}
-              >
-                <Text style={[styles.filterText, activo && styles.filterTextActive]}>
-                  {opcion}
                 </Text>
               </TouchableOpacity>
             );
@@ -942,54 +1090,61 @@ export default function ReportesScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionBadge}>
+              <Text style={[styles.sectionBadge, { color: colors.activePurple }]}>
                 {esAdmin ? "TODOS LOS CASOS" : "TUS REGISTROS"}
               </Text>
-              <Text style={styles.sectionTitle}>Casos recientes</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textLight }]}>Casos recientes</Text>
             </View>
-            <Text style={styles.resultCount}>{reportesFiltrados.length}</Text>
+            <Text style={[styles.resultCount, { color: colors.textMuted }]}>
+              {reportesFiltrados.length}
+            </Text>
           </View>
 
           {reportesFiltrados.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="document-text-outline" size={42} color={COLORS.onSurfaceVariant} />
-              <Text style={styles.emptyTitle}>No hay registros</Text>
-              <Text style={styles.emptyText}>
+            <View
+              style={[
+                styles.emptyContainer,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Ionicons name="document-text-outline" size={42} color={colors.textMuted} />
+              <Text style={[styles.emptyTitle, { color: colors.textLight }]}>No hay registros</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
                 {busqueda
                   ? `No encontramos resultados para "${busqueda}".`
                   : "Todavía no hay casos que coincidan con estos filtros."}
               </Text>
-              {(busqueda || filtro !== "Todos" || filtroCategoria !== "Todas") && (
-                <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={() => {
-                    setBusqueda("");
-                    setFiltro("Todos");
-                    setFiltroCategoria("Todas");
-                  }}
-                >
-                  <Text style={styles.secondaryButtonText}>Limpiar filtros</Text>
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
             reportesFiltrados.map((r) => {
               const esDenuncia = categoriaDe(r) === "denuncia";
               const estadoColor = colorEstado(r.estado);
               const estadoNorm = normalizar(r.estado);
-              const acento = esDenuncia ? COLORS.error : COLORS.info;
+              const acento = esDenuncia ? colors.error : colors.info;
               const abierto = expandidoId === r.id;
               const fotos = Array.isArray(r.fotos) ? r.fotos : [];
 
               return (
-                <View key={r.id} style={styles.caseCard}>
+                <View
+                  key={r.id}
+                  style={[
+                    styles.caseCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
+                >
                   {/* ---- Parte superior: foto + datos principales ---- */}
                   <View style={styles.caseTopRow}>
                     {fotos.length > 0 ? (
                       <Image source={{ uri: fotos[0] }} style={styles.caseThumb} />
                     ) : (
-                      <View style={[styles.caseThumb, styles.caseThumbEmpty]}>
-                        <Ionicons name="paw-outline" size={30} color={COLORS.primary} />
+                      <View
+                        style={[
+                          styles.caseThumb,
+                          styles.caseThumbEmpty,
+                          { backgroundColor: colors.background },
+                        ]}
+                      >
+                        <Ionicons name="paw-outline" size={30} color={colors.activePurple} />
                       </View>
                     )}
 
@@ -1009,17 +1164,20 @@ export default function ReportesScreen() {
                             {r.estado || "Recibido"}
                           </Text>
                         </View>
-                        <Text style={styles.dateText}>{r.fecha}</Text>
+                        <Text style={[styles.dateText, { color: colors.textMuted }]}>{r.fecha}</Text>
                       </View>
 
-                      <Text style={styles.caseTitle} numberOfLines={2}>
+                      <Text style={[styles.caseTitle, { color: colors.textLight }]} numberOfLines={2}>
                         {r.animal}
                         {r.tipoLabel ? ` · ${r.tipoLabel}` : ""}
                       </Text>
 
                       <View style={styles.caseLocationRow}>
-                        <Ionicons name="location-outline" size={14} color={COLORS.primary} />
-                        <Text style={styles.caseLocationText} numberOfLines={1}>
+                        <Ionicons name="location-outline" size={14} color={colors.activePurple} />
+                        <Text
+                          style={[styles.caseLocationText, { color: colors.textMuted }]}
+                          numberOfLines={1}
+                        >
                           {r.zona}
                         </Text>
                       </View>
@@ -1027,7 +1185,7 @@ export default function ReportesScreen() {
                   </View>
 
                   {/* ---- Pie: categoria + ver seguimiento ---- */}
-                  <View style={styles.caseFooter}>
+                  <View style={[styles.caseFooter, { borderTopColor: colors.border }]}>
                     <View style={styles.caseFooterLeft}>
                       <Ionicons
                         name={esDenuncia ? "alert-circle" : "flag"}
@@ -1039,8 +1197,10 @@ export default function ReportesScreen() {
                       </Text>
                       {!!r.anonimo && (
                         <View style={styles.anonBadge}>
-                          <Ionicons name="eye-off-outline" size={11} color={COLORS.onSurfaceVariant} />
-                          <Text style={styles.anonBadgeText}>Anónimo</Text>
+                          <Ionicons name="eye-off-outline" size={11} color={colors.textMuted} />
+                          <Text style={[styles.anonBadgeText, { color: colors.textMuted }]}>
+                            Anónimo
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -1051,25 +1211,31 @@ export default function ReportesScreen() {
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       onPress={() => setExpandidoId(abierto ? null : r.id)}
                     >
-                      <Text style={styles.caseLinkText}>
+                      <Text style={[styles.caseLinkText, { color: colors.activePurple }]}>
                         {abierto ? "Ocultar" : esAdmin ? "Ver detalles" : "Ver seguimiento"}
                       </Text>
                       <Ionicons
                         name={abierto ? "chevron-up" : "chevron-forward"}
                         size={14}
-                        color={COLORS.lavender}
+                        color={colors.activePurple}
                       />
                     </TouchableOpacity>
                   </View>
 
                   {/* ---- Detalle desplegable ---- */}
                   {abierto && (
-                    <View style={styles.caseExpanded}>
-                      <Text style={styles.descriptionLabel}>Descripción</Text>
-                      <Text style={styles.description}>{r.descripcion}</Text>
+                    <View style={[styles.caseExpanded, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.descriptionLabel, { color: colors.textMuted }]}>
+                        Descripción
+                      </Text>
+                      <Text style={[styles.description, { color: colors.textLight }]}>
+                        {r.descripcion}
+                      </Text>
 
                       {Array.isArray(r.detalles) && r.detalles.length > 0 && (
-                        <Text style={styles.detailsText}>{r.detalles.join(" · ")}</Text>
+                        <Text style={[styles.detailsText, { color: colors.textMuted }]}>
+                          {r.detalles.join(" · ")}
+                        </Text>
                       )}
 
                       {fotos.length > 1 && (
@@ -1083,22 +1249,20 @@ export default function ReportesScreen() {
                       {esAdmin ? (
                         <View style={styles.actionsRow}>
                           <TouchableOpacity
-                            style={styles.attendButton}
+                            style={[styles.attendButton, { backgroundColor: colors.activePurple }]}
                             activeOpacity={0.85}
                             onPress={() => seleccionarEstado(r)}
                           >
-                            <Ionicons
-                              name="clipboard-outline"
-                              size={17}
-                              color={COLORS.onPrimaryContainer}
-                            />
-                            <Text style={styles.attendButtonText}>Actualizar estado</Text>
+                            <Ionicons name="clipboard-outline" size={17} color="#ffffff" />
+                            <Text style={[styles.attendButtonText, { color: "#ffffff" }]}>
+                              Actualizar estado
+                            </Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={styles.deleteButton}
                             onPress={() => confirmarEliminar(r.id)}
                           >
-                            <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+                            <Ionicons name="trash-outline" size={18} color={colors.error} />
                           </TouchableOpacity>
                         </View>
                       ) : (
@@ -1112,7 +1276,7 @@ export default function ReportesScreen() {
                             <Text style={[styles.trackingTitle, { color: estadoColor }]}>
                               Estado: {r.estado || "Recibido"}
                             </Text>
-                            <Text style={styles.trackingText}>
+                            <Text style={[styles.trackingText, { color: colors.textMuted }]}>
                               {estadoNorm === "atendido"
                                 ? "Este caso ha sido marcado como atendido."
                                 : estadoNorm === "en atencion"
@@ -1132,19 +1296,27 @@ export default function ReportesScreen() {
           )}
         </View>
 
-        <View style={styles.helpCard}>
+        <View
+          style={[
+            styles.helpCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
           <View style={styles.helpIcon}>
-            <Ionicons name="shield-checkmark-outline" size={25} color={COLORS.primary} />
+            <Ionicons name="shield-checkmark-outline" size={25} color={colors.activePurple} />
           </View>
           <View style={styles.helpContent}>
-            <Text style={styles.helpTitle}>Tu reporte puede ayudar a salvar una vida</Text>
-            <Text style={styles.helpText}>
+            <Text style={[styles.helpTitle, { color: colors.textLight }]}>
+              Tu reporte puede ayudar a salvar una vida
+            </Text>
+            <Text style={[styles.helpText, { color: colors.textMuted }]}>
               Registra informacion clara para facilitar el seguimiento de cada caso.
             </Text>
           </View>
         </View>
       </ScrollView>
 
+      {/* ================= MODAL FORMULARIOS (diseño original) ================= */}
       <Modal
         visible={modalMode !== null}
         animationType="slide"
@@ -1152,20 +1324,25 @@ export default function ReportesScreen() {
         onRequestClose={() => setModalMode(null)}
       >
         <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
+          <View
+            style={[
+              styles.modalContainer,
+              { backgroundColor: colors.background, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={styles.modalTitle}>
+                <Text style={[styles.modalTitle, { color: colors.textLight }]}>
                   {modalMode === "denuncia" ? "Nueva denuncia" : "Nuevo reporte"}
                 </Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                   {modalMode === "denuncia"
                     ? "Describe la situacion con la mayor precisión posible. La información debe tratarse con responsabilidad."
                     : "Reporta animales perdidos, encontrados o que necesiten ayuda. Los campos con * son obligatorios."}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setModalMode(null)}>
-                <Ionicons name="close" size={27} color={COLORS.onSurface} />
+                <Ionicons name="close" size={27} color={colors.textLight} />
               </TouchableOpacity>
             </View>
 
@@ -1177,18 +1354,25 @@ export default function ReportesScreen() {
             >
               {modalMode === "denuncia" && (
                 <>
-                  <View style={styles.card}>
+                  <View
+                    style={[
+                      styles.card,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                    ]}
+                  >
                     <View style={styles.infoRow}>
                       <View style={styles.infoIconWrap}>
                         <Ionicons
                           name="shield-checkmark-outline"
                           size={22}
-                          color={COLORS.primary}
+                          color={colors.activePurple}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.infoTitle}>Manejo responsable de la información</Text>
-                        <Text style={styles.infoText}>
+                        <Text style={[styles.infoTitle, { color: colors.textLight }]}>
+                          Manejo responsable de la información
+                        </Text>
+                        <Text style={[styles.infoText, { color: colors.textMuted }]}>
                           Comparte unicamente informacion necesaria para atender el caso.
                         </Text>
                       </View>
@@ -1206,6 +1390,7 @@ export default function ReportesScreen() {
         </View>
       </Modal>
 
+      {/* ================= MODAL INVITADO ================= */}
       <Modal
         visible={mostrarModalInvitado}
         transparent={true}
@@ -1213,31 +1398,38 @@ export default function ReportesScreen() {
         onRequestClose={() => setMostrarModalInvitado(false)}
       >
         <View style={styles.invitadoBackground}>
-          <View style={styles.invitadoContainer}>
-
+          <View
+            style={[
+              styles.invitadoContainer,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+          
             <Ionicons
               name="lock-closed-outline"
               size={44}
-              color={COLORS.warning}
+              color={colors.warning}      
               style={styles.invitadoIcon}
-            />
+            />               
 
-            <Text style={styles.invitadoTitle}>Acción Restringida</Text>
+            <Text style={[styles.invitadoTitle, { color: colors.textLight }]}>
+              Acción Restringida
+            </Text>
 
-            <Text style={styles.invitadoSubtitle}>
+            <Text style={[styles.invitadoSubtitle, { color: colors.textMuted }]}>
               Debes iniciar sesión o registrarte para poder registrar un caso o denuncia en la plataforma.
             </Text>
 
             {/* Botón Iniciar Sesión */}
             <TouchableOpacity
-              style={styles.invitadoLoginBtn}
+              style={[styles.invitadoLoginBtn, { backgroundColor: colors.activePurple }]}
               activeOpacity={0.85}
               onPress={() => {
                 setMostrarModalInvitado(false);
                 router.push("/(auth)/login");
               }}
             >
-              <Text style={styles.invitadoLoginText}>Iniciar Sesión</Text>
+              <Text style={[styles.invitadoLoginText, { color: "#ffffff" }]}>Iniciar Sesión</Text>
             </TouchableOpacity>
 
             {/* Botón Cancelar */}
@@ -1246,7 +1438,9 @@ export default function ReportesScreen() {
               activeOpacity={0.85}
               onPress={() => setMostrarModalInvitado(false)}
             >
-              <Text style={styles.invitadoCancelText}>Tal vez más tarde</Text>
+              <Text style={[styles.invitadoCancelText, { color: colors.textMuted }]}>
+                Tal vez más tarde
+              </Text>
             </TouchableOpacity>
 
           </View>

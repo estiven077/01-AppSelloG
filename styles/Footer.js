@@ -1,93 +1,147 @@
+
 import { StyleSheet } from "react-native";
 
-export const COLORS = {
-  surface: "#1E1A18", // Tono oscuro contrastante
-  onSurface: "#FFFFFF",
-  muted: "#A0AEC0", 
-  primary: "#7C3AED", 
-};
-
+// Los colores de fondo, texto y bordes se configuran desde Footer.jsx
+// usando los colores del tema seleccionado por el usuario.
 export const styles = StyleSheet.create({
+  // Contenedor principal
   footer: {
-    backgroundColor: COLORS.surface,
+    position: "relative",
+    overflow: "hidden",
+    borderTopWidth: 1,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    width: "100%",
-    marginTop: 35, // ESPACIADO PARA QUE NO SE VEA PEGADO
-    borderTopWidth: 2,
-    borderTopColor: "rgba(210, 204, 220, 0.4)", // Línea superior llamativa
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    paddingTop: 20,
+    paddingBottom: 6,
   },
-  followSection: {
+
+  // Huellitas decorativas de fondo
+  pawWrap: {
+    position: "absolute",
+  },
+  pawTop: {
+    top: 12,
+    right: -12,
+    transform: [{ rotate: "-25deg" }],
+  },
+  pawMiddle: {
+    top: "45%",
+    left: -18,
+    transform: [{ rotate: "20deg" }],
+  },
+  pawBottom: {
+    bottom: 25,
+    right: 15,
+    transform: [{ rotate: "15deg" }],
+  },
+
+  // Distribución para pantallas grandes
+  gridWide: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 24,
+  },
+
+  // Distribución para móviles
+  gridNarrow: {
+    gap: 18,
+  },
+  rowNarrow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 14,
+  },
+
+  // Columnas
+  column: {
+    flex: 1,
+    minWidth: 0,
+  },
+  columnBrand: {
+    flex: 1.3,
+    minWidth: 0,
+  },
+
+  // Marca
+  brandHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.12)",
-    marginBottom: 20,
+    gap: 7,
+    marginBottom: 4,
   },
-  followTitle: {
-    color: COLORS.onSurface,
+  brandTitle: {
+    fontSize: 20,
     fontWeight: "bold",
-    fontSize: 14,
-    letterSpacing: 1,
   },
+  brandSubtitle: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+    marginBottom: 7,
+  },
+  brandDescription: {
+    fontSize: 12,
+    lineHeight: 18,
+    maxWidth: 340,
+  },
+
+  // Títulos de sección y línea morada
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 7,
+  },
+  titleLine: {
+    height: 1,
+    marginBottom: 10,
+    opacity: 0.65,
+  },
+
+  // Enlaces de navegación
+  linkText: {
+    fontSize: 13,
+    marginBottom: 9,
+  },
+
+  // Información de contacto
+  contactItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 7,
+    marginBottom: 9,
+  },
+  contactText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  // Botones de redes sociales
   socialContainer: {
     flexDirection: "row",
-    gap: 10,
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 9,
   },
   socialButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
-  columnsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  column: {
-    width: "48%",
-  },
-  columnTitle: {
-    color: COLORS.onSurface,
-    fontWeight: "bold",
-    fontSize: 14,
-    marginBottom: 12,
-    letterSpacing: 0.8,
-  },
-  columnTextBold: {
-    color: COLORS.onSurface,
-    fontWeight: "bold",
-    fontSize: 12,
-  },
-  columnText: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  linkText: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginBottom: 8,
-  },
+
+  // Copyright
   copyContainer: {
+    marginTop: 16,
+    paddingVertical: 11,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-    paddingTop: 16,
     alignItems: "center",
   },
   copyText: {
-    color: COLORS.muted,
-    fontSize: 11,
+    fontSize: 10,
     textAlign: "center",
+    lineHeight: 15,
   },
 });

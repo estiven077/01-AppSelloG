@@ -15,25 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useTheme } from '../../context/ThemeContext'; // 1. Importamos el hook global del tema
 
 // Componente Navbar reutilizable
 import Navbar from '../../components/Navbar';
-
-// Paleta del proyecto - Material 3
-const COLORS = {
-  primary: '#7C3AED',
-  primaryContainer: '#7C3AED',
-  onPrimaryContainer: '#FFFFFF',
-  surface: '#0F172A',
-  surfaceContainer: 'rgba(15, 23, 42, 0.75)',
-  surfaceContainerHigh: '#0F172A',
-  onSurface: '#FFFFFF',
-  onSurfaceVariant: '#C4B5FD',
-  cardBg: 'rgba(15, 23, 42, 0.75)',
-  cardBorder: 'rgba(255, 255, 255, 0.12)',
-  error: '#E11D48',
-  success: '#10B981',
-};
 
 // Base de datos de mascotas
 const PETS_DATABASE = [
@@ -132,6 +117,7 @@ const GENDERS = ['Todos', 'Macho', 'Hembra'];
 export default function MascotasScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { theme, colors } = useTheme(); // 2. Extraemos theme y colors globales
 
   // Estados de Búsqueda y Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -201,10 +187,10 @@ export default function MascotasScreen() {
   ].filter(Boolean).length;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
+        barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
         translucent={true}
       />
 
@@ -219,12 +205,12 @@ export default function MascotasScreen() {
         ]}
       >
         {/* BUSCADOR */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={18} color={COLORS.onSurfaceVariant} />
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.textLight }]}
             placeholder="Buscar por raza, nombre o edad..."
-            placeholderTextColor={COLORS.onSurfaceVariant}
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -233,7 +219,7 @@ export default function MascotasScreen() {
               <Ionicons
                 name="close-circle"
                 size={18}
-                color={COLORS.onSurfaceVariant}
+                color={colors.textMuted}
               />
             </TouchableOpacity>
           )}
@@ -252,13 +238,15 @@ export default function MascotasScreen() {
                 key={cat}
                 style={[
                   styles.categoryTab,
-                  isActive && styles.categoryTabActive,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  isActive && { backgroundColor: colors.activePurple, borderColor: colors.activePurple },
                 ]}
                 onPress={() => setSelectedCategory(cat)}
               >
                 <Text
                   style={[
                     styles.categoryTabText,
+                    { color: colors.textMuted },
                     isActive && styles.categoryTabTextActive,
                   ]}
                 >
@@ -270,17 +258,17 @@ export default function MascotasScreen() {
         </ScrollView>
 
         {/* MÓDULO DE FILTROS DESPLEGABLE */}
-        <View style={styles.dropdownSection}>
+        <View style={[styles.dropdownSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
             style={styles.dropdownHeader}
             activeOpacity={0.8}
             onPress={() => setIsFiltersOpen(!isFiltersOpen)}
           >
             <View style={styles.dropdownHeaderLeft}>
-              <Ionicons name="options-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.dropdownHeaderText}>Filtros Avanzados</Text>
+              <Ionicons name="options-outline" size={18} color={colors.activePurple} />
+              <Text style={[styles.dropdownHeaderText, { color: colors.textLight }]}>Filtros Avanzados</Text>
               {activeFiltersCount > 0 && (
-                <View style={styles.activeBadge}>
+                <View style={[styles.activeBadge, { backgroundColor: colors.activePurple }]}>
                   <Text style={styles.activeBadgeText}>{activeFiltersCount}</Text>
                 </View>
               )}
@@ -288,27 +276,28 @@ export default function MascotasScreen() {
             <Ionicons
               name={isFiltersOpen ? 'chevron-up' : 'chevron-down'}
               size={20}
-              color={COLORS.onSurfaceVariant}
+              color={colors.textMuted}
             />
           </TouchableOpacity>
 
           {isFiltersOpen && (
-            <View style={styles.dropdownContent}>
+            <View style={[styles.dropdownContent, { borderTopColor: colors.border }]}>
               {/* Opción Tamaño */}
               <TouchableOpacity
                 style={[
                   styles.subFilterHeader,
-                  activeSubFilter === 'size' && styles.subFilterHeaderActive,
+                  { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', borderColor: colors.border },
+                  activeSubFilter === 'size' && { borderColor: colors.activePurple, backgroundColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(147, 51, 234, 0.1)' },
                 ]}
                 onPress={() => toggleSubFilter('size')}
               >
-                <Text style={styles.subFilterTitle}>
+                <Text style={[styles.subFilterTitle, { color: colors.textLight }]}>
                   Tamaño {selectedSize !== 'Todos' ? `(${selectedSize})` : ''}
                 </Text>
                 <Ionicons
                   name={activeSubFilter === 'size' ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={COLORS.onSurfaceVariant}
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
               {activeSubFilter === 'size' && (
@@ -318,13 +307,15 @@ export default function MascotasScreen() {
                       key={size}
                       style={[
                         styles.chipOption,
-                        selectedSize === size && styles.chipOptionActive,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        selectedSize === size && { backgroundColor: colors.activePurple, borderColor: colors.activePurple },
                       ]}
                       onPress={() => setSelectedSize(size)}
                     >
                       <Text
                         style={[
                           styles.chipOptionText,
+                          { color: colors.textMuted },
                           selectedSize === size && styles.chipOptionTextActive,
                         ]}
                       >
@@ -339,17 +330,18 @@ export default function MascotasScreen() {
               <TouchableOpacity
                 style={[
                   styles.subFilterHeader,
-                  activeSubFilter === 'age' && styles.subFilterHeaderActive,
+                  { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', borderColor: colors.border },
+                  activeSubFilter === 'age' && { borderColor: colors.activePurple, backgroundColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(147, 51, 234, 0.1)' },
                 ]}
                 onPress={() => toggleSubFilter('age')}
               >
-                <Text style={styles.subFilterTitle}>
+                <Text style={[styles.subFilterTitle, { color: colors.textLight }]}>
                   Edad {selectedAge !== 'Todos' ? `(${selectedAge})` : ''}
                 </Text>
                 <Ionicons
                   name={activeSubFilter === 'age' ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={COLORS.onSurfaceVariant}
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
               {activeSubFilter === 'age' && (
@@ -359,13 +351,15 @@ export default function MascotasScreen() {
                       key={age}
                       style={[
                         styles.chipOption,
-                        selectedAge === age && styles.chipOptionActive,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        selectedAge === age && { backgroundColor: colors.activePurple, borderColor: colors.activePurple },
                       ]}
                       onPress={() => setSelectedAge(age)}
                     >
                       <Text
                         style={[
                           styles.chipOptionText,
+                          { color: colors.textMuted },
                           selectedAge === age && styles.chipOptionTextActive,
                         ]}
                       >
@@ -380,17 +374,18 @@ export default function MascotasScreen() {
               <TouchableOpacity
                 style={[
                   styles.subFilterHeader,
-                  activeSubFilter === 'gender' && styles.subFilterHeaderActive,
+                  { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)', borderColor: colors.border },
+                  activeSubFilter === 'gender' && { borderColor: colors.activePurple, backgroundColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(147, 51, 234, 0.1)' },
                 ]}
                 onPress={() => toggleSubFilter('gender')}
               >
-                <Text style={styles.subFilterTitle}>
+                <Text style={[styles.subFilterTitle, { color: colors.textLight }]}>
                   Género {selectedGender !== 'Todos' ? `(${selectedGender})` : ''}
                 </Text>
                 <Ionicons
                   name={activeSubFilter === 'gender' ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={COLORS.onSurfaceVariant}
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
               {activeSubFilter === 'gender' && (
@@ -400,13 +395,15 @@ export default function MascotasScreen() {
                       key={gen}
                       style={[
                         styles.chipOption,
-                        selectedGender === gen && styles.chipOptionActive,
+                        { backgroundColor: colors.background, borderColor: colors.border },
+                        selectedGender === gen && { backgroundColor: colors.activePurple, borderColor: colors.activePurple },
                       ]}
                       onPress={() => setSelectedGender(gen)}
                     >
                       <Text
                         style={[
                           styles.chipOptionText,
+                          { color: colors.textMuted },
                           selectedGender === gen && styles.chipOptionTextActive,
                         ]}
                       >
@@ -422,7 +419,7 @@ export default function MascotasScreen() {
 
         {/* ENCABEZADO DE RESULTADOS */}
         <View style={styles.resultsHeader}>
-          <Text style={styles.resultsCount}>
+          <Text style={[styles.resultsCount, { color: colors.textMuted }]}>
             Mascotas encontradas ({filteredPets.length})
           </Text>
           {(selectedCategory !== 'TODOS' ||
@@ -431,7 +428,7 @@ export default function MascotasScreen() {
             selectedGender !== 'Todos' ||
             searchQuery !== '') && (
             <TouchableOpacity onPress={resetFilters}>
-              <Text style={styles.resetFiltersText}>Limpiar filtros</Text>
+              <Text style={[styles.resetFiltersText, { color: colors.activePurple }]}>Limpiar filtros</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -442,26 +439,26 @@ export default function MascotasScreen() {
             <MaterialCommunityIcons
               name="paw-off"
               size={48}
-              color={COLORS.onSurfaceVariant}
+              color={colors.textMuted}
             />
-            <Text style={styles.emptyTitle}>No hay coincidencias</Text>
-            <Text style={styles.emptySub}>
+            <Text style={[styles.emptyTitle, { color: colors.textLight }]}>No hay coincidencias</Text>
+            <Text style={[styles.emptySub, { color: colors.textMuted }]}>
               Prueba cambiando la raza, la edad o limpiando los filtros seleccionados.
             </Text>
-            <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
+            <TouchableOpacity style={[styles.resetBtn, { backgroundColor: colors.activePurple }]} onPress={resetFilters}>
               <Text style={styles.resetBtnText}>Restablecer búsqueda</Text>
             </TouchableOpacity>
           </View>
         ) : (
           filteredPets.map((pet) => (
-            <View key={pet.id} style={styles.card}>
+            <View key={pet.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.imageWrapper}>
                 <Image source={{ uri: pet.image }} style={styles.image} />
                 <LinearGradient
-                  colors={['transparent', 'rgba(15,23,42,0.9)']}
+                  colors={['transparent', theme === 'dark' ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.9)']}
                   style={styles.imageGradient}
                 />
-                <View style={styles.badgeTop}>
+                <View style={[styles.badgeTop, { backgroundColor: colors.activePurple }]}>
                   <Text style={styles.badgeTopText}>{pet.status}</Text>
                 </View>
               </View>
@@ -469,35 +466,35 @@ export default function MascotasScreen() {
               <View style={styles.cardBody}>
                 <View style={styles.cardHeaderRow}>
                   <View>
-                    <Text style={styles.animalName}>{pet.name}</Text>
-                    <Text style={styles.animalBreed}>{pet.breed}</Text>
+                    <Text style={[styles.animalName, { color: colors.textLight }]}>{pet.name}</Text>
+                    <Text style={[styles.animalBreed, { color: colors.activePurple }]}>{pet.breed}</Text>
                   </View>
-                  <View style={styles.typeBadge}>
-                    <Text style={styles.typeBadgeText}>{pet.type}</Text>
+                  <View style={[styles.typeBadge, { backgroundColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(147, 51, 234, 0.1)', borderColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(147, 51, 234, 0.2)' }]}>
+                    <Text style={[styles.typeBadgeText, { color: colors.textMuted }]}>{pet.type}</Text>
                   </View>
                 </View>
 
                 <View style={styles.specsRow}>
                   <View style={styles.specItem}>
-                    <Ionicons name="time-outline" size={13} color={COLORS.onSurfaceVariant} />
-                    <Text style={styles.specText}>{pet.age}</Text>
+                    <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+                    <Text style={[styles.specText, { color: colors.textMuted }]}>{pet.age}</Text>
                   </View>
                   <View style={styles.specItem}>
-                    <Ionicons name="resize-outline" size={13} color={COLORS.onSurfaceVariant} />
-                    <Text style={styles.specText}>{pet.size}</Text>
+                    <Ionicons name="resize-outline" size={13} color={colors.textMuted} />
+                    <Text style={[styles.specText, { color: colors.textMuted }]}>{pet.size}</Text>
                   </View>
                   <View style={styles.specItem}>
-                    <Ionicons name="transgender-outline" size={13} color={COLORS.onSurfaceVariant} />
-                    <Text style={styles.specText}>{pet.gender}</Text>
+                    <Ionicons name="transgender-outline" size={13} color={colors.textMuted} />
+                    <Text style={[styles.specText, { color: colors.textMuted }]}>{pet.gender}</Text>
                   </View>
                 </View>
 
-                <Text style={styles.description} numberOfLines={2}>
+                <Text style={[styles.description, { color: colors.textMuted }]} numberOfLines={2}>
                   {pet.description}
                 </Text>
 
                 <TouchableOpacity
-                  style={styles.button}
+                  style={[styles.button, { backgroundColor: colors.activePurple }]}
                   activeOpacity={0.85}
                   onPress={() => setSelectedPet(pet)}
                 >
@@ -518,45 +515,45 @@ export default function MascotasScreen() {
         onRequestClose={() => setSelectedPet(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                <Text style={[styles.modalHeaderTitle, { color: colors.textLight }]} numberOfLines={1}>
                   {selectedPet?.name}
                 </Text>
-                <Text style={styles.modalHeaderSubtitle}>
+                <Text style={[styles.modalHeaderSubtitle, { color: colors.textMuted }]}>
                   📍 {selectedPet?.location}
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setSelectedPet(null)}
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' }]}
               >
-                <Ionicons name="close" size={20} color={COLORS.onSurface} />
+                <Ionicons name="close" size={20} color={colors.textLight} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalTopRow}>
               <View style={styles.modalInfoContainer}>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Raza:</Text>
-                  <Text style={styles.infoValue}>{selectedPet?.breed}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Raza:</Text>
+                  <Text style={[styles.infoValue, { color: colors.textLight }]}>{selectedPet?.breed}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Edad / Etapa:</Text>
-                  <Text style={styles.infoValue}>
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Edad / Etapa:</Text>
+                  <Text style={[styles.infoValue, { color: colors.textLight }]}>
                     {selectedPet?.age} ({selectedPet?.ageGroup})
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Tamaño / Sexo:</Text>
-                  <Text style={styles.infoValue}>
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Tamaño / Sexo:</Text>
+                  <Text style={[styles.infoValue, { color: colors.textLight }]}>
                     {selectedPet?.size} • {selectedPet?.gender}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Estado:</Text>
-                  <Text style={[styles.infoValue, { color: COLORS.primary }]}>
+                  <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Estado:</Text>
+                  <Text style={[styles.infoValue, { color: colors.activePurple }]}>
                     {selectedPet?.status}
                   </Text>
                 </View>
@@ -564,31 +561,31 @@ export default function MascotasScreen() {
 
               <Image
                 source={{ uri: selectedPet?.image }}
-                style={styles.modalImage}
+                style={[styles.modalImage, { borderColor: colors.activePurple }]}
               />
             </View>
 
-            <View style={styles.healthContainer}>
+            <View style={[styles.healthContainer, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.03)', borderColor: colors.border }]}>
               <View style={styles.healthItem}>
-                <Text style={styles.healthLabel}>💉 Vacunas y Esquema:</Text>
-                <Text style={styles.healthText}>{selectedPet?.vaccines}</Text>
+                <Text style={[styles.healthLabel, { color: colors.textMuted }]}>💉 Vacunas y Esquema:</Text>
+                <Text style={[styles.healthText, { color: colors.textLight }]}>{selectedPet?.vaccines}</Text>
               </View>
 
               <View style={styles.healthItem}>
-                <Text style={styles.healthLabel}>📋 Historial Clínico:</Text>
-                <Text style={styles.healthText}>
+                <Text style={[styles.healthLabel, { color: colors.textMuted }]}>📋 Historial Clínico:</Text>
+                <Text style={[styles.healthText, { color: colors.textLight }]}>
                   {selectedPet?.medicalHistory}
                 </Text>
               </View>
             </View>
 
             <View style={styles.historyContainer}>
-              <Text style={styles.historyLabel}>Sobre {selectedPet?.name}:</Text>
-              <Text style={styles.historyText}>{selectedPet?.description}</Text>
+              <Text style={[styles.historyLabel, { color: colors.activePurple }]}>Sobre {selectedPet?.name}:</Text>
+              <Text style={[styles.historyText, { color: colors.textLight }]}>{selectedPet?.description}</Text>
             </View>
 
             <TouchableOpacity
-              style={styles.modalAdoptButton}
+              style={[styles.modalAdoptButton, { backgroundColor: colors.activePurple }]}
               activeOpacity={0.85}
               onPress={() => {
                 const pet = selectedPet;
@@ -603,11 +600,11 @@ export default function MascotasScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.modalActionButton}
+              style={[styles.modalActionButton, { borderColor: colors.border }]}
               activeOpacity={0.85}
               onPress={() => setSelectedPet(null)}
             >
-              <Text style={styles.modalActionButtonText}>Cerrar</Text>
+              <Text style={[styles.modalActionButtonText, { color: colors.textMuted }]}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -619,7 +616,6 @@ export default function MascotasScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.surface,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -630,9 +626,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 46,
@@ -641,7 +635,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: COLORS.onSurface,
     fontSize: 14,
   },
 
@@ -654,17 +647,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     marginRight: 8,
   },
-  categoryTabActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
   categoryTabText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -674,10 +660,8 @@ const styles = StyleSheet.create({
 
   /* FILTROS DESPLEGABLES */
   dropdownSection: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -693,12 +677,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dropdownHeaderText: {
-    color: COLORS.onSurface,
     fontSize: 13,
     fontWeight: '700',
   },
   activeBadge: {
-    backgroundColor: COLORS.primary,
     borderRadius: 10,
     width: 18,
     height: 18,
@@ -714,7 +696,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
     gap: 8,
     paddingTop: 10,
   },
@@ -724,17 +705,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  subFilterHeaderActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(124, 58, 237, 0.1)',
   },
   subFilterTitle: {
-    color: COLORS.onSurface,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -749,16 +723,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  chipOptionActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   chipOptionText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 11,
   },
   chipOptionTextActive: {
@@ -774,12 +741,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   resultsCount: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     fontWeight: '600',
   },
   resetFiltersText: {
-    color: COLORS.primary,
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -792,19 +757,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: {
-    color: COLORS.onSurface,
     fontSize: 16,
     fontWeight: 'bold',
   },
   emptySub: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     textAlign: 'center',
     paddingHorizontal: 20,
   },
   resetBtn: {
     marginTop: 12,
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -817,12 +779,10 @@ const styles = StyleSheet.create({
 
   /* TARJETAS DE ANIMALES */
   card: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
   },
   imageWrapper: {
     width: '100%',
@@ -844,7 +804,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -864,25 +823,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   animalName: {
-    color: COLORS.onSurface,
     fontSize: 18,
     fontWeight: 'bold',
   },
   animalBreed: {
-    color: COLORS.primary,
     fontSize: 12,
     fontWeight: '600',
   },
   typeBadge: {
-    backgroundColor: 'rgba(124, 58, 237, 0.15)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: 'rgba(124, 58, 237, 0.3)',
   },
   typeBadgeText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -897,17 +851,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   specText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 11,
   },
   description: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 14,
   },
   button: {
-    backgroundColor: COLORS.primary,
     borderRadius: 10,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -931,10 +882,8 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: '100%',
-    backgroundColor: COLORS.surfaceContainerHigh,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     padding: 18,
   },
   modalHeader: {
@@ -943,22 +892,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
     paddingBottom: 8,
   },
   modalHeaderTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.onSurface,
   },
   modalHeaderSubtitle: {
     fontSize: 12,
-    color: COLORS.onSurfaceVariant,
     marginTop: 2,
   },
   closeButton: {
     padding: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
   },
   modalTopRow: {
@@ -976,12 +921,10 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 10,
-    color: COLORS.onSurfaceVariant,
     fontWeight: 'bold',
   },
   infoValue: {
     fontSize: 12,
-    color: COLORS.onSurface,
     fontWeight: '500',
   },
   modalImage: {
@@ -989,16 +932,13 @@ const styles = StyleSheet.create({
     height: 115,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.primary,
   },
   healthContainer: {
     marginTop: 10,
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.25)',
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
   },
   healthItem: {
     flexDirection: 'column',
@@ -1006,11 +946,9 @@ const styles = StyleSheet.create({
   healthLabel: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: COLORS.onSurfaceVariant,
   },
   healthText: {
     fontSize: 11,
-    color: COLORS.onSurface,
     marginTop: 1,
   },
   historyContainer: {
@@ -1020,16 +958,13 @@ const styles = StyleSheet.create({
   historyLabel: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: COLORS.primary,
     marginBottom: 2,
   },
   historyText: {
     fontSize: 11,
-    color: COLORS.onSurface,
     lineHeight: 16,
   },
   modalAdoptButton: {
-    backgroundColor: COLORS.primary,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
@@ -1043,13 +978,11 @@ const styles = StyleSheet.create({
   modalActionButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
   modalActionButtonText: {
-    color: COLORS.onSurfaceVariant,
     fontWeight: 'bold',
     fontSize: 13,
   },

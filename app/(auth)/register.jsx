@@ -22,39 +22,14 @@ import { Picker } from '@react-native-picker/picker';
 
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
-// ======================================================
-// PALETA DE COLORES (IGUAL QUE EL LOGIN)
-// ======================================================
-
-const COLORS = {
-  primary: '#8B5CF6',
-  primaryDark: '#8B5CF6',
-  background: '#0d0d0d', // Fondo negro/oscuro para la safe area superior
-
-  cardBg: '#0F172A',
-  cardText: '#1E1B4B',
-  cardSubtext: '#6B7280',
-
-  inputBg: '#F9FAFB',
-  inputBorder: '#E5E7EB',
-  inputIcon: '#A78BFA',
-
-  purpleLink: '#7C3AED',
-  roleSelectedBg: '#EDE9FE',
-  roleSelectedBorder: '#7C3AED',
-
-  error: '#E11D48',
-};
-
-// ======================================================
 // VALIDACIÓN CON YUP
-// ======================================================
 
 const validationSchema = Yup.object().shape({
-  rol: Yup.string().required('Selecciona un '),
+  rol: Yup.string().required('Selecciona un rol'),
 
   // ---------------- USUARIO ----------------
   tipoDocumento: Yup.string().when('rol', {
@@ -141,27 +116,35 @@ const validationSchema = Yup.object().shape({
 
 // ======================================================
 // COMPONENTES REUTILIZABLES
+// IMPORTANTE: deben estar FUERA de Register. Si se definen dentro,
+// se recrean en cada tecla y el TextInput pierde el foco.
 // ======================================================
 
-const Field = ({ formik, name, label, icon, placeholder, ...inputProps }) => {
+function Field({ formik, tema, name, label, icon, placeholder, ...inputProps }) {
   const hasError = formik.touched[name] && formik.errors[name];
 
   return (
     <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: tema.cardSubtext }]}>{label}</Text>
 
-      <View style={[styles.inputContainer, hasError && styles.inputError]}>
+      <View
+        style={[
+          styles.inputContainer,
+          { backgroundColor: tema.inputBg, borderColor: tema.inputBorder },
+          hasError && styles.inputError,
+        ]}
+      >
         <Ionicons
           name={icon}
           size={20}
-          color={COLORS.inputIcon}
+          color={tema.primaryColor}
           style={styles.inputIcon}
         />
 
         <TextInput
-          style={styles.inputWithIcon}
+          style={[styles.inputWithIcon, { color: tema.cardText }]}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={tema.cardSubtext}
           value={formik.values[name]}
           onChangeText={formik.handleChange(name)}
           onBlur={formik.handleBlur(name)}
@@ -172,27 +155,33 @@ const Field = ({ formik, name, label, icon, placeholder, ...inputProps }) => {
       {hasError && <Text style={styles.error}>{formik.errors[name]}</Text>}
     </View>
   );
-};
+}
 
-const PasswordField = ({ formik, name, label, placeholder }) => {
+function PasswordField({ formik, tema, name, label, placeholder }) {
   const [visible, setVisible] = useState(false);
   const hasError = formik.touched[name] && formik.errors[name];
 
   return (
     <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: tema.cardSubtext }]}>{label}</Text>
 
-      <View style={[styles.passwordContainer, hasError && styles.inputError]}>
+      <View
+        style={[
+          styles.passwordContainer,
+          { backgroundColor: tema.inputBg, borderColor: tema.inputBorder },
+          hasError && styles.inputError,
+        ]}
+      >
         <Ionicons
           name="lock-closed-outline"
           size={20}
-          color={COLORS.inputIcon}
+          color={tema.primaryColor}
         />
 
         <TextInput
-          style={styles.passwordInput}
+          style={[styles.passwordInput, { color: tema.cardText }]}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={tema.cardSubtext}
           value={formik.values[name]}
           onChangeText={formik.handleChange(name)}
           onBlur={formik.handleBlur(name)}
@@ -204,7 +193,7 @@ const PasswordField = ({ formik, name, label, placeholder }) => {
           <Ionicons
             name={visible ? 'eye-off-outline' : 'eye-outline'}
             size={21}
-            color={COLORS.inputIcon}
+            color={tema.primaryColor}
           />
         </TouchableOpacity>
       </View>
@@ -212,32 +201,77 @@ const PasswordField = ({ formik, name, label, placeholder }) => {
       {hasError && <Text style={styles.error}>{formik.errors[name]}</Text>}
     </View>
   );
-};
+}
 
-const RoleCard = ({ icon, title, subtitle, selected, onPress }) => (
-  <TouchableOpacity
-    style={[styles.roleCard, selected && styles.roleCardSelected]}
-    onPress={onPress}
-    activeOpacity={0.8}
-  >
-    <Ionicons
-      name={icon}
-      size={28}
-      color={selected ? COLORS.purpleLink : COLORS.inputIcon}
-    />
-    <Text style={[styles.roleTitle, selected && styles.roleTitleSelected]}>
-      {title}
-    </Text>
-    <Text style={styles.roleSubtitle}>{subtitle}</Text>
-  </TouchableOpacity>
-);
+function RoleCard({ tema, icon, title, subtitle, selected, onPress }) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.roleCard,
+        {
+          backgroundColor: tema.isDark ? '#172033' : '#F9FAFB',
+          borderColor: tema.inputBorder,
+        },
+        selected && {
+          backgroundColor: tema.isDark ? 'rgba(139, 92, 246, 0.15)' : '#EDE9FE',
+          borderColor: tema.primaryColor,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Ionicons
+        name={icon}
+        size={28}
+        color={selected ? tema.primaryColor : tema.cardSubtext}
+      />
+      <Text
+        style={[
+          styles.roleTitle,
+          { color: tema.cardSubtext },
+          selected && { color: tema.cardText },
+        ]}
+      >
+        {title}
+      </Text>
+      <Text
+        style={[
+          styles.roleSubtitle,
+          { color: tema.isDark ? '#94a3b8' : '#9CA3AF' },
+        ]}
+      >
+        {subtitle}
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
-// ======================================================
 // COMPONENTE REGISTER
-// ======================================================
 
 export default function Register() {
   const router = useRouter();
+  const { theme, colors } = useTheme();
+
+  const isDark = theme === 'dark';
+
+  // Variables dinámicas según el tema activo corregidas para modo claro y oscuro
+  const currentBg = isDark ? '#0F172A' : '#3B1578';
+  const cardBg = isDark ? '#1e293b' : '#FFFFFF';
+  const cardText = isDark ? '#FFFFFF' : '#1E1B4B';
+  const cardSubtext = isDark ? '#94a3b8' : '#6B7280';
+  const inputBg = isDark ? '#172033' : '#F9FAFB';
+  const inputBorder = isDark ? '#334155' : '#E5E7EB';
+  const primaryColor = colors.activePurple || '#8B5CF6';
+
+  // Colores que se pasan a los componentes de arriba
+  const tema = {
+    isDark,
+    cardText,
+    cardSubtext,
+    inputBg,
+    inputBorder,
+    primaryColor,
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -295,10 +329,10 @@ export default function Register() {
   const errorTerminos = formik.touched.terminos && formik.errors.terminos;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentBg }]} edges={['top']}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={COLORS.background}
+        backgroundColor={currentBg}
         translucent={false}
       />
 
@@ -312,9 +346,7 @@ export default function Register() {
           bounces={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ==================================================
-              SECCIÓN SUPERIOR: IMAGEN DE FONDO + TEXTO
-          ================================================== */}
+          {/* SECCIÓN SUPERIOR */}
           <ImageBackground
             source={require('../../assets/perrito.png')}
             style={styles.topHeader}
@@ -327,38 +359,35 @@ export default function Register() {
               </Text>
               <Text style={styles.welcomeSubtitle}>
                 {esFundacion
-                  ? 'Tu fundación puede ayudar a cambiar la vida de muchos animales.'
+                  ? 'Tu fundación puede ayudar a cambiar la vida de muchos compañeros de cuatro patas'
                   : 'Cada registro nos acerca a encontrar un hogar para quienes más lo necesitan.'}
               </Text>
             </View>
           </ImageBackground>
 
-          {/* ==================================================
-              CURVA SVG SEPARADORA
-          ================================================== */}
+          {/* CURVA SVG SEPARADORA */}
           <View style={styles.svgContainer}>
             <Svg height="50" width={width} viewBox={`0 0 ${width} 50`}>
               <Path
                 d={`M 0 30 Q ${width * 0.4} 0, ${width * 0.75} 25 T ${width} 15 L ${width} 50 L 0 50 Z`}
-                fill={COLORS.cardBg}
+                fill={cardBg}
               />
             </Svg>
           </View>
 
-          {/* ==================================================
-              TARJETA BLANCA DEL FORMULARIO
-          ================================================== */}
-          <View style={styles.cardContainer}>
-            <Text style={styles.title}>
+          {/* TARJETA DEL FORMULARIO */}
+          <View style={[styles.cardContainer, { backgroundColor: cardBg }]}>
+            <Text style={[styles.title, { color: cardText }]}>
               {esFundacion ? 'Registrar fundación' : 'Crear cuenta'}
             </Text>
 
             {/* ROL (TARJETAS) */}
             <View style={styles.group}>
-              <Text style={styles.label}>Soy:</Text>
+              <Text style={[styles.label, { color: cardSubtext }]}>Soy:</Text>
 
               <View style={styles.roleRow}>
                 <RoleCard
+                  tema={tema}
                   icon="paw"
                   title="Usuario"
                   subtitle="Adoptar y reportar"
@@ -367,6 +396,7 @@ export default function Register() {
                 />
 
                 <RoleCard
+                  tema={tema}
                   icon="home"
                   title="Fundación"
                   subtitle="Gestionar mascotas"
@@ -382,18 +412,19 @@ export default function Register() {
             {formik.values.rol === 'usuario' && (
               <>
                 <View style={styles.group}>
-                  <Text style={styles.label}>Tipo de documento</Text>
+                  <Text style={[styles.label, { color: cardSubtext }]}>Tipo de documento</Text>
 
                   <View
                     style={[
                       styles.pickerContainer,
+                      { backgroundColor: inputBg, borderColor: inputBorder },
                       errorTipoDoc && styles.inputError,
                     ]}
                   >
                     <Ionicons
                       name="card-outline"
                       size={20}
-                      color={COLORS.inputIcon}
+                      color={primaryColor}
                       style={styles.pickerIcon}
                     />
 
@@ -403,26 +434,14 @@ export default function Register() {
                         formik.setFieldValue('tipoDocumento', value)
                       }
                       onBlur={() => formik.setFieldTouched('tipoDocumento', true)}
-                      style={styles.picker}
-                      dropdownIconColor={COLORS.inputIcon}
+                      style={[styles.picker, { color: cardText, backgroundColor: inputBg }]}
+                      dropdownIconColor={primaryColor}
                     >
-                      <Picker.Item label="Seleccionar tipo" value="" color="#6B7280" />
-                      <Picker.Item
-                        label="Cédula de ciudadanía"
-                        value="cedula_ciudadania"
-                        color="#1E1B4B"
-                      />
-                      <Picker.Item
-                        label="Cédula de extranjería"
-                        value="cedula_extranjeria"
-                        color="#1E1B4B"
-                      />
-                      <Picker.Item label="PEP" value="pep" color="#1E1B4B" />
-                      <Picker.Item
-                        label="Permiso por Protección Temporal"
-                        value="ppt"
-                        color="#1E1B4B"
-                      />
+                      <Picker.Item label="Seleccionar tipo" value="" color={cardSubtext} />
+                      <Picker.Item label="Cédula de ciudadanía" value="cedula_ciudadania" color={cardText} />
+                      <Picker.Item label="Cédula de extranjería" value="cedula_extranjeria" color={cardText} />
+                      <Picker.Item label="PEP" value="pep" color={cardText} />
+                      <Picker.Item label="Permiso por Protección Temporal" value="ppt" color={cardText} />
                     </Picker>
                   </View>
 
@@ -433,6 +452,7 @@ export default function Register() {
 
                 <Field
                   formik={formik}
+                  tema={tema}
                   name="documento"
                   label="Número de documento"
                   icon="id-card-outline"
@@ -443,6 +463,7 @@ export default function Register() {
 
                 <Field
                   formik={formik}
+                  tema={tema}
                   name="nombre"
                   label="Nombre de usuario"
                   icon="person-outline"
@@ -457,24 +478,27 @@ export default function Register() {
               <>
                 <Field
                   formik={formik}
+                  tema={tema}
                   name="nombreFundacion"
                   label="Nombre de la fundación"
                   icon="business-outline"
-                  placeholder="Nombre de la fundación"
+                  placeholder="Ej: Huellitas, Compañeros de cuatro patas"
                   autoCapitalize="words"
                 />
 
                 <Field
                   formik={formik}
+                  tema={tema}
                   name="representanteLegal"
                   label="Representante legal"
                   icon="person-outline"
-                  placeholder="Nombre del representante legal"
+                  placeholder="Nombre y Apellido del representante legal"
                   autoCapitalize="words"
                 />
 
                 <Field
                   formik={formik}
+                  tema={tema}
                   name="telefono"
                   label="Teléfono de contacto"
                   icon="call-outline"
@@ -485,6 +509,7 @@ export default function Register() {
 
                 <Field
                   formik={formik}
+                  tema={tema}
                   name="ciudadDireccion"
                   label="Ciudad / Dirección"
                   icon="location-outline"
@@ -497,10 +522,11 @@ export default function Register() {
             {/* CAMPOS COMUNES */}
             <Field
               formik={formik}
+              tema={tema}
               name="email"
               label="Correo electrónico"
               icon="mail-outline"
-              placeholder="Ingresar correo"
+              placeholder="Ingresa tu correo"
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -508,6 +534,7 @@ export default function Register() {
 
             <PasswordField
               formik={formik}
+              tema={tema}
               name="password"
               label="Contraseña"
               placeholder="Ingresar contraseña"
@@ -515,6 +542,7 @@ export default function Register() {
 
             <PasswordField
               formik={formik}
+              tema={tema}
               name="confirmarPassword"
               label="Confirmar contraseña"
               placeholder="Repetir contraseña"
@@ -532,7 +560,8 @@ export default function Register() {
               <View
                 style={[
                   styles.checkbox,
-                  formik.values.terminos && styles.checkboxActive,
+                  { borderColor: inputBorder },
+                  formik.values.terminos && { backgroundColor: primaryColor, borderColor: primaryColor },
                   errorTerminos && styles.inputError,
                 ]}
               >
@@ -541,10 +570,10 @@ export default function Register() {
                 )}
               </View>
 
-              <Text style={styles.rememberText}>
+              <Text style={[styles.rememberText, { color: cardSubtext }]}>
                 Acepto los{' '}
-                <Text style={styles.footerLink}>términos de servicio</Text> y la{' '}
-                <Text style={styles.footerLink}>política de privacidad</Text>.
+                <Text style={[styles.footerLink, { color: primaryColor }]}>términos de servicio</Text> y la{' '}
+                <Text style={[styles.footerLink, { color: primaryColor }]}>política de privacidad</Text>.
               </Text>
             </TouchableOpacity>
 
@@ -556,7 +585,7 @@ export default function Register() {
 
             {/* BOTÓN CREAR CUENTA */}
             <TouchableOpacity
-              style={styles.registerButton}
+              style={[styles.registerButton, { backgroundColor: primaryColor }]}
               onPress={formik.handleSubmit}
               activeOpacity={0.85}
               disabled={formik.isSubmitting}
@@ -567,13 +596,13 @@ export default function Register() {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: isDark ? '#334155' : '#F3F4F6' }]} />
 
             {/* FOOTER */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>¿Ya tienes una cuenta?</Text>
+              <Text style={[styles.footerText, { color: cardSubtext }]}>¿Ya tienes una cuenta?</Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.footerLink}>Inicia sesión</Text>
+                <Text style={[styles.footerLink, { color: primaryColor }]}>Inicia sesión</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -590,17 +619,13 @@ export default function Register() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0d0d0d',
   },
-
   keyboard: {
     flex: 1,
   },
-
   scroll: {
     flexGrow: 1,
   },
-
   topHeader: {
     width: '100%',
     height: 300,
@@ -608,16 +633,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 60,
   },
-
   headerImage: {
     transform: [{ scale: 1.15 }, { translateX: 25 }],
   },
-
   welcomeTextContainer: {
     maxWidth: '65%',
     alignItems: 'flex-start',
   },
-
   welcomeTitle: {
     color: '#FFFFFF',
     fontSize: 36,
@@ -628,7 +650,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 10,
   },
-
   welcomeSubtitle: {
     color: '#FFFFFF',
     fontSize: 13,
@@ -638,7 +659,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 8,
   },
-
   svgContainer: {
     width: '100%',
     height: 50,
@@ -646,221 +666,156 @@ const styles = StyleSheet.create({
     marginBottom: -1,
     position: 'relative',
   },
-
   cardContainer: {
     width: '100%',
-    backgroundColor: COLORS.cardBg,
     paddingHorizontal: 28,
     paddingTop: 8,
     paddingBottom: 40,
   },
-
   title: {
-    color: COLORS.primaryDark,
     fontSize: 30,
     fontWeight: '800',
     marginBottom: 20,
   },
-
   roleRow: {
     flexDirection: 'row',
     gap: 12,
   },
-
   roleCard: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 18,
     paddingHorizontal: 8,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: COLORS.inputBorder,
     borderRadius: 16,
   },
-
-  roleCardSelected: {
-    backgroundColor: COLORS.roleSelectedBg,
-    borderColor: COLORS.roleSelectedBorder,
-  },
-
   roleTitle: {
-    color: COLORS.cardSubtext,
     fontSize: 15,
     fontWeight: '800',
     marginTop: 8,
   },
-
-  roleTitleSelected: {
-    color: COLORS.primaryDark,
-  },
-
   roleSubtitle: {
-    color: '#9CA3AF',
     fontSize: 11,
     marginTop: 2,
     textAlign: 'center',
   },
-
   group: {
     marginBottom: 18,
   },
-
   label: {
-    color: COLORS.cardSubtext,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
   },
-
   inputContainer: {
     height: 52,
-    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.inputBorder,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
-
   inputError: {
-    borderColor: COLORS.error,
+    borderColor: '#E11D48',
   },
-
   inputIcon: {
     marginRight: 10,
   },
-
   inputWithIcon: {
     flex: 1,
     height: '100%',
-    color: COLORS.cardText,
     fontSize: 14,
   },
-
   passwordContainer: {
     height: 52,
-    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.inputBorder,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 16,
     paddingRight: 14,
   },
-
   passwordInput: {
     flex: 1,
     height: '100%',
-    color: COLORS.cardText,
     fontSize: 14,
     marginLeft: 10,
     marginRight: 10,
   },
-
   pickerContainer: {
     height: 52,
-    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.inputBorder,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
   },
-
   pickerIcon: {
     marginLeft: 16,
     marginRight: 3,
   },
-
   picker: {
     flex: 1,
     height: 52,
-    color: COLORS.cardText,
-    backgroundColor: COLORS.inputBg,
   },
-
   error: {
-    color: COLORS.error,
+    color: '#E11D48',
     fontSize: 12,
     marginTop: 6,
     marginLeft: 4,
   },
-
   errorTerminos: {
     marginTop: -16,
     marginBottom: 16,
   },
-
   remember: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
     marginTop: 4,
   },
-
   checkbox: {
     width: 22,
     height: 22,
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
     borderRadius: 11,
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  checkboxActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-
   rememberText: {
     flex: 1,
-    color: COLORS.cardSubtext,
     fontSize: 13,
     lineHeight: 19,
   },
-
   registerButton: {
     height: 54,
-    backgroundColor: COLORS.primary,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
   },
-
   registerButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
     marginTop: 24,
     marginBottom: 20,
   },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   footerText: {
-    color: COLORS.cardSubtext,
     fontSize: 13,
     marginRight: 6,
   },
-
   footerLink: {
-    color: COLORS.purpleLink,
     fontSize: 13,
     fontWeight: '700',
   },

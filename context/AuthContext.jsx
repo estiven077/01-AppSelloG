@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
     })();
   }, []);
 
-  // Cerrar sesión, avisa al servidor y limpia todo
+  // Cerrar sesion, avisa al servidor y limpia todo
   const logout = async () => {
     const token = await getToken();
     if (token) {

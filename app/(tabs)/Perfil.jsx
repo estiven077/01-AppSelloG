@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   View,
   Text,
@@ -21,25 +21,25 @@ import {
 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { UserContext } from "../../context/UserContext";
+import { useTheme } from "../../context/ThemeContext"; // 1. Importamos el hook de temas
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const COLORS = {
-  surface: "#17121F",
-  surfaceContainer: "#1F192B",
-  surfaceContainerHigh: "#282038",
-  cardBg: "#21182D",
-  cardBorder: "#34253F",
-  primary: "#A78BFA",
-  primaryContainer: "#6D4CC7",
-  onPrimaryContainer: "#FFFFFF",
-  onSurface: "#FFFFFF",
-  onSurfaceVariant: "#9E97A7",
-  danger: "#FF6B6B",
-};
-
 export default function Perfil({ navigation }) {
   const { userData, updateUser } = useContext(UserContext);
+  const { theme, colors } = useTheme(); // 2. Extraemos theme y colors globales
+
+  const isDark = theme === "dark";
+
+  // Colores dinámicos basados en el tema actual
+  const currentBg = isDark ? "#0F172A" : colors.background;
+  const surfaceContainer = isDark ? "#1e293b" : colors.surface;
+  const surfaceContainerHigh = isDark ? "#172033" : colors.surface;
+  const cardBg = isDark ? "#172033" : colors.surface;
+  const cardBorder = isDark ? "#334155" : colors.border;
+  const textLight = isDark ? "#FFFFFF" : colors.textLight;
+  const textMuted = isDark ? "#94a3b8" : colors.textMuted;
+  const primaryColor = colors.activePurple || "#A78BFA";
 
   // Estados de navegación y modales
   const [isEditing, setIsEditing] = useState(false);
@@ -52,6 +52,15 @@ export default function Perfil({ navigation }) {
   const [ubicacion, setUbicacion] = useState(userData.ciudad ?? "");
   const [descripcion, setDescripcion] = useState(userData.descripcion ?? "");
   const [fotoPerfil, setFotoPerfil] = useState(userData.fotoPerfil ?? null);
+
+  // Sincronizar datos si userData cambia externamente
+  useEffect(() => {
+    setNombre(userData.nombre ?? "");
+    setEmail(userData.correo ?? "");
+    setUbicacion(userData.ciudad ?? "");
+    setDescripcion(userData.descripcion ?? "");
+    setFotoPerfil(userData.fotoPerfil ?? null);
+  }, [userData]);
 
   // Respaldo para restaurar si se cancela la edición
   const [tempProfile, setTempProfile] = useState({});
@@ -178,13 +187,13 @@ export default function Perfil({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.surfaceContainer} />
+    <SafeAreaView style={[styles.container, { backgroundColor: currentBg }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={currentBg} />
 
       {/* NAVBAR */}
-      <View style={styles.navbar}>
+      <View style={[styles.navbar, { backgroundColor: currentBg, borderBottomColor: cardBorder }]}>
         <View style={styles.brandContainer}>
-          <Text style={styles.brandTitle}>Mi Perfil</Text>
+          <Text style={[styles.brandTitle, { color: primaryColor }]}>Mi Perfil</Text>
         </View>
 
         <View style={styles.navActions}>
@@ -192,7 +201,7 @@ export default function Perfil({ navigation }) {
             style={styles.navButton}
             onPress={() => setModalNotificaciones(true)}
           >
-            <Ionicons name="notifications-outline" size={22} color={COLORS.onSurface} />
+            <Ionicons name="notifications-outline" size={22} color={textLight} />
             <View style={styles.notificationDot} />
           </TouchableOpacity>
 
@@ -200,7 +209,7 @@ export default function Perfil({ navigation }) {
             style={styles.navButton}
             onPress={handleCerrarSesion}
           >
-            <Feather name="log-out" size={20} color={COLORS.danger} />
+            <Feather name="log-out" size={20} color="#FF6B6B" />
           </TouchableOpacity>
         </View>
       </View>
@@ -216,14 +225,14 @@ export default function Perfil({ navigation }) {
             <View style={styles.photoSection}>
               <View style={styles.photoContainer}>
                 {fotoPerfil ? (
-                  <Image source={{ uri: fotoPerfil }} style={styles.profilePhoto} />
+                  <Image source={{ uri: fotoPerfil }} style={[styles.profilePhoto, { borderColor: primaryColor }]} />
                 ) : (
-                  <View style={styles.defaultPhoto}>
-                    <Ionicons name="person" size={50} color={COLORS.primary} />
+                  <View style={[styles.defaultPhoto, { backgroundColor: surfaceContainer, borderColor: primaryColor }]}>
+                    <Ionicons name="person" size={50} color={primaryColor} />
                   </View>
                 )}
                 <TouchableOpacity
-                  style={styles.cameraButton}
+                  style={[styles.cameraButton, { backgroundColor: primaryColor, borderColor: currentBg }]}
                   onPress={handleSeleccionarFoto}
                 >
                   <Ionicons name="camera" size={16} color="#FFFFFF" />
@@ -232,7 +241,7 @@ export default function Perfil({ navigation }) {
 
               <View style={styles.photoButtons}>
                 <TouchableOpacity
-                  style={styles.changePhotoButton}
+                  style={[styles.changePhotoButton, { backgroundColor: primaryColor }]}
                   onPress={handleSeleccionarFoto}
                 >
                   <Feather name="upload" size={14} color="#FFFFFF" />
@@ -241,10 +250,10 @@ export default function Perfil({ navigation }) {
 
                 {fotoPerfil && (
                   <TouchableOpacity
-                    style={styles.deletePhotoButton}
+                    style={[styles.deletePhotoButton, { borderColor: cardBorder }]}
                     onPress={handleEliminarFoto}
                   >
-                    <Feather name="trash-2" size={14} color={COLORS.danger} />
+                    <Feather name="trash-2" size={14} color="#FF6B6B" />
                     <Text style={styles.deletePhotoText}>Eliminar</Text>
                   </TouchableOpacity>
                 )}
@@ -253,62 +262,62 @@ export default function Perfil({ navigation }) {
 
             {/* FORMULARIO DE EDICIÓN */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Nombre completo</Text>
-              <View style={styles.searchWrap}>
-                <Feather name="user" size={16} color={COLORS.primary} />
+              <Text style={[styles.inputLabel, { color: textMuted }]}>Nombre completo</Text>
+              <View style={[styles.searchWrap, { backgroundColor: isDark ? "rgba(15, 13, 21, 0.6)" : colors.surface, borderColor: cardBorder }]}>
+                <Feather name="user" size={16} color={primaryColor} />
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: textLight }]}
                   value={nombre}
                   onChangeText={setNombre}
-                  placeholderTextColor={COLORS.onSurfaceVariant}
+                  placeholderTextColor={textMuted}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Correo electrónico</Text>
-              <View style={styles.searchWrap}>
-                <Feather name="mail" size={16} color={COLORS.primary} />
+              <Text style={[styles.inputLabel, { color: textMuted }]}>Correo electrónico</Text>
+              <View style={[styles.searchWrap, { backgroundColor: isDark ? "rgba(15, 13, 21, 0.6)" : colors.surface, borderColor: cardBorder }]}>
+                <Feather name="mail" size={16} color={primaryColor} />
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: textLight }]}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  placeholderTextColor={COLORS.onSurfaceVariant}
+                  placeholderTextColor={textMuted}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Ubicación</Text>
-              <View style={styles.searchWrap}>
-                <Feather name="map-pin" size={16} color={COLORS.primary} />
+              <Text style={[styles.inputLabel, { color: textMuted }]}>Ubicación</Text>
+              <View style={[styles.searchWrap, { backgroundColor: isDark ? "rgba(15, 13, 21, 0.6)" : colors.surface, borderColor: cardBorder }]}>
+                <Feather name="map-pin" size={16} color={primaryColor} />
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: textLight }]}
                   value={ubicacion}
                   onChangeText={setUbicacion}
-                  placeholderTextColor={COLORS.onSurfaceVariant}
+                  placeholderTextColor={textMuted}
                 />
               </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Biografía / Descripción</Text>
-              <View style={[styles.searchWrap, styles.textAreaWrap]}>
+              <Text style={[styles.inputLabel, { color: textMuted }]}>Biografía / Descripción</Text>
+              <View style={[styles.searchWrap, styles.textAreaWrap, { backgroundColor: isDark ? "rgba(15, 13, 21, 0.6)" : colors.surface, borderColor: cardBorder }]}>
                 <TextInput
-                  style={[styles.searchInput, styles.textArea]}
+                  style={[styles.searchInput, styles.textArea, { color: textLight }]}
                   value={descripcion}
                   onChangeText={setDescripcion}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
-                  placeholderTextColor={COLORS.onSurfaceVariant}
+                  placeholderTextColor={textMuted}
                 />
               </View>
             </View>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleGuardarPerfil}>
+            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: primaryColor }]} onPress={handleGuardarPerfil}>
               <Text style={styles.primaryButtonText}>Guardar Cambios</Text>
             </TouchableOpacity>
 
@@ -316,36 +325,36 @@ export default function Perfil({ navigation }) {
               style={styles.cancelButton}
               onPress={handleCancelarEdicion}
             >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+              <Text style={[styles.cancelButtonText, { color: textMuted }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         ) : (
 
           /* VISTA PERFIL DETALLADO */
           <>
-            <View style={styles.profileSection}>
+            <View style={[styles.profileSection, { backgroundColor: currentBg }]}>
               <View style={styles.profilePhotoWrapper}>
                 {fotoPerfil ? (
-                  <Image source={{ uri: fotoPerfil }} style={styles.mainProfilePhoto} />
+                  <Image source={{ uri: fotoPerfil }} style={[styles.mainProfilePhoto, { borderColor: primaryColor }]} />
                 ) : (
-                  <View style={styles.mainDefaultPhoto}>
-                    <Ionicons name="person" size={48} color={COLORS.primary} />
+                  <View style={[styles.mainDefaultPhoto, { backgroundColor: surfaceContainer, borderColor: primaryColor }]}>
+                    <Ionicons name="person" size={48} color={primaryColor} />
                   </View>
                 )}
               </View>
 
-              <Text style={styles.heroTitle}>{nombre}</Text>
-              <Text style={styles.heroSubtitle}>{email}</Text>
+              <Text style={[styles.heroTitle, { color: textLight }]}>{nombre}</Text>
+              <Text style={[styles.heroSubtitle, { color: textMuted }]}>{email}</Text>
 
               <View style={styles.locationRow}>
-                <Ionicons name="location-sharp" size={14} color={COLORS.primary} />
-                <Text style={styles.locationText}>{ubicacion}</Text>
+                <Ionicons name="location-sharp" size={14} color={primaryColor} />
+                <Text style={[styles.locationText, { color: textMuted }]}>{ubicacion}</Text>
               </View>
 
-              <Text style={styles.profileDescription}>{descripcion}</Text>
+              <Text style={[styles.profileDescription, { color: textMuted }]}>{descripcion}</Text>
 
               <TouchableOpacity
-                style={styles.editProfileButton}
+                style={[styles.editProfileButton, { backgroundColor: primaryColor }]}
                 onPress={handleIniciarEdicion}
               >
                 <Feather name="edit-3" size={15} color="#FFFFFF" />
@@ -355,43 +364,44 @@ export default function Perfil({ navigation }) {
 
             {/* BARRA DE ESTADÍSTICAS */}
             <View style={styles.statsRowContainer}>
-              <View style={styles.statsRow}>
+              <View style={[styles.statsRow, { backgroundColor: cardBg, borderColor: cardBorder }]}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{publicaciones.length}</Text>
-                  <Text style={styles.statLabel}>REPORTES</Text>
+                  <Text style={[styles.statNumber, { color: primaryColor }]}>{publicaciones.length}</Text>
+                  <Text style={[styles.statLabel, { color: textMuted }]}>REPORTES</Text>
                 </View>
 
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: cardBorder }]} />
 
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{adopciones.length}</Text>
-                  <Text style={styles.statLabel}>ADOPCIONES</Text>
+                  <Text style={[styles.statNumber, { color: primaryColor }]}>{adopciones.length}</Text>
+                  <Text style={[styles.statLabel, { color: textMuted }]}>ADOPCIONES</Text>
                 </View>
 
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: cardBorder }]} />
 
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{favoritos.length}</Text>
-                  <Text style={styles.statLabel}>FAVORITOS</Text>
+                  <Text style={[styles.statNumber, { color: primaryColor }]}>{favoritos.length}</Text>
+                  <Text style={[styles.statLabel, { color: textMuted }]}>FAVORITOS</Text>
                 </View>
               </View>
             </View>
 
             {/* TAB BAR DE NAVEGACIÓN */}
-            <View style={styles.tabsContainer}>
+            <View style={[styles.tabsContainer, { backgroundColor: currentBg, borderBottomColor: cardBorder }]}>
               <TouchableOpacity
-                style={[styles.tab, activeTab === "publicaciones" && styles.activeTab]}
+                style={[styles.tab, activeTab === "publicaciones" && { borderBottomColor: primaryColor }]}
                 onPress={() => setActiveTab("publicaciones")}
               >
                 <Ionicons
                   name="grid-outline"
                   size={16}
-                  color={activeTab === "publicaciones" ? COLORS.primary : COLORS.onSurfaceVariant}
+                  color={activeTab === "publicaciones" ? primaryColor : textMuted}
                 />
                 <Text
                   style={[
                     styles.tabText,
-                    activeTab === "publicaciones" && styles.activeTabText,
+                    { color: textMuted },
+                    activeTab === "publicaciones" && { color: primaryColor, fontWeight: "bold" },
                   ]}
                 >
                   Mis Publicaciones
@@ -399,18 +409,19 @@ export default function Perfil({ navigation }) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.tab, activeTab === "favoritos" && styles.activeTab]}
+                style={[styles.tab, activeTab === "favoritos" && { borderBottomColor: primaryColor }]}
                 onPress={() => setActiveTab("favoritos")}
               >
                 <Ionicons
                   name={activeTab === "favoritos" ? "heart" : "heart-outline"}
                   size={16}
-                  color={activeTab === "favoritos" ? COLORS.primary : COLORS.onSurfaceVariant}
+                  color={activeTab === "favoritos" ? primaryColor : textMuted}
                 />
                 <Text
                   style={[
                     styles.tabText,
-                    activeTab === "favoritos" && styles.activeTabText,
+                    { color: textMuted },
+                    activeTab === "favoritos" && { color: primaryColor, fontWeight: "bold" },
                   ]}
                 >
                   Favoritos
@@ -418,18 +429,19 @@ export default function Perfil({ navigation }) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.tab, activeTab === "adopciones" && styles.activeTab]}
+                style={[styles.tab, activeTab === "adopciones" && { borderBottomColor: primaryColor }]}
                 onPress={() => setActiveTab("adopciones")}
               >
                 <MaterialCommunityIcons
                   name="paw-outline"
                   size={16}
-                  color={activeTab === "adopciones" ? COLORS.primary : COLORS.onSurfaceVariant}
+                  color={activeTab === "adopciones" ? primaryColor : textMuted}
                 />
                 <Text
                   style={[
                     styles.tabText,
-                    activeTab === "adopciones" && styles.activeTabText,
+                    { color: textMuted },
+                    activeTab === "adopciones" && { color: primaryColor, fontWeight: "bold" },
                   ]}
                 >
                   Mis Adopciones
@@ -438,51 +450,51 @@ export default function Perfil({ navigation }) {
             </View>
 
             {/* RENDERIZADO DINÁMICO DE LOS TABS */}
-            <View style={styles.sectionContainer}>
+            <View style={[styles.sectionContainer, { backgroundColor: currentBg }]}>
               {activeTab === "publicaciones" &&
                 (publicaciones.length > 0 ? (
                   publicaciones.map((pub) => (
-                    <View style={styles.card} key={pub.id}>
+                    <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]} key={pub.id}>
                       <View style={styles.cardContent}>
                         <View style={styles.cardHeaderRow}>
-                          <View style={styles.itemIcon}>
-                            <Ionicons name="alert-circle" size={22} color={COLORS.primary} />
+                          <View style={[styles.itemIcon, { backgroundColor: surfaceContainer }]}>
+                            <Ionicons name="alert-circle" size={22} color={primaryColor} />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.cardTitle}>{pub.titulo}</Text>
-                            <Text style={styles.cardDetail}>{pub.fecha}</Text>
+                            <Text style={[styles.cardTitle, { color: textLight }]}>{pub.titulo}</Text>
+                            <Text style={[styles.cardDetail, { color: textMuted }]}>{pub.fecha}</Text>
                           </View>
                           <TouchableOpacity
                             onPress={() => handleEliminarPublicacion(pub.id)}
                             style={{ padding: 4 }}
                           >
-                            <Feather name="trash-2" size={16} color={COLORS.danger} />
+                            <Feather name="trash-2" size={16} color="#FF6B6B" />
                           </TouchableOpacity>
                         </View>
-                        <Text style={styles.itemLocation}>{pub.ubicacion}</Text>
+                        <Text style={[styles.itemLocation, { color: primaryColor }]}>{pub.ubicacion}</Text>
                       </View>
                     </View>
                   ))
                 ) : (
                   <View style={styles.emptyContainer}>
-                    <Ionicons name="documents-outline" size={38} color={COLORS.cardBorder} />
-                    <Text style={styles.sectionTitle}>Sin publicaciones</Text>
-                    <Text style={styles.emptyText}>No has realizado ningún reporte aún.</Text>
+                    <Ionicons name="documents-outline" size={38} color={cardBorder} />
+                    <Text style={[styles.sectionTitle, { color: textLight }]}>Sin publicaciones</Text>
+                    <Text style={[styles.emptyText, { color: textMuted }]}>No has realizado ningún reporte aún.</Text>
                   </View>
                 ))}
 
               {activeTab === "favoritos" &&
                 (favoritos.length > 0 ? (
                   favoritos.map((pet) => (
-                    <View style={styles.card} key={pet.id}>
-                      <Text style={styles.cardTitle}>{pet.nombre}</Text>
+                    <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]} key={pet.id}>
+                      <Text style={[styles.cardTitle, { color: textLight }]}>{pet.nombre}</Text>
                     </View>
                   ))
                 ) : (
                   <View style={styles.emptyContainer}>
-                    <Ionicons name="heart-outline" size={38} color={COLORS.cardBorder} />
-                    <Text style={styles.sectionTitle}>Sin favoritos</Text>
-                    <Text style={styles.emptyText}>
+                    <Ionicons name="heart-outline" size={38} color={cardBorder} />
+                    <Text style={[styles.sectionTitle, { color: textLight }]}>Sin favoritos</Text>
+                    <Text style={[styles.emptyText, { color: textMuted }]}>
                       Aquí verás las mascotas o publicaciones que te han gustado.
                     </Text>
                   </View>
@@ -490,9 +502,9 @@ export default function Perfil({ navigation }) {
 
               {activeTab === "adopciones" && (
                 <View style={styles.emptyContainer}>
-                  <MaterialCommunityIcons name="paw-off-outline" size={38} color={COLORS.cardBorder} />
-                  <Text style={styles.sectionTitle}>Sin adopciones</Text>
-                  <Text style={styles.emptyText}>
+                  <MaterialCommunityIcons name="paw-off-outline" size={38} color={cardBorder} />
+                  <Text style={[styles.sectionTitle, { color: textLight }]}>Sin adopciones</Text>
+                  <Text style={[styles.emptyText, { color: textMuted }]}>
                     No tienes solicitudes de adopción en curso.
                   </Text>
                 </View>
@@ -514,28 +526,28 @@ export default function Perfil({ navigation }) {
           activeOpacity={1}
           onPress={() => setModalNotificaciones(false)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContainer, { backgroundColor: surfaceContainerHigh, borderColor: cardBorder }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: cardBorder }]}>
               <View>
-                <Text style={styles.modalHeaderTitle}>Notificaciones</Text>
-                <Text style={styles.modalHeaderSubtitle}>Alertas e interacciones</Text>
+                <Text style={[styles.modalHeaderTitle, { color: textLight }]}>Notificaciones</Text>
+                <Text style={[styles.modalHeaderSubtitle, { color: textMuted }]}>Alertas e interacciones</Text>
               </View>
               <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)" }]}
                 onPress={() => setModalNotificaciones(false)}
               >
-                <Ionicons name="close" size={20} color={COLORS.onSurface} />
+                <Ionicons name="close" size={20} color={textLight} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.notificationItem}>
-              <View style={styles.notificationIcon}>
-                <Ionicons name="heart" size={18} color={COLORS.primary} />
+              <View style={[styles.notificationIcon, { backgroundColor: surfaceContainer }]}>
+                <Ionicons name="heart" size={18} color={primaryColor} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.infoValue}>Nueva respuesta</Text>
-                <Text style={styles.cardDetail}>Comentaron en tu publicación de rescate.</Text>
-                <Text style={styles.statLabel}>Hace 10 min</Text>
+                <Text style={[styles.infoValue, { color: textLight }]}>Nueva respuesta</Text>
+                <Text style={[styles.cardDetail, { color: textMuted }]}>Comentaron en tu publicación de rescate.</Text>
+                <Text style={[styles.statLabel, { color: textMuted }]}>Hace 10 min</Text>
               </View>
             </View>
           </View>
@@ -549,14 +561,11 @@ export default function Perfil({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.surface,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   navbar: {
     flexDirection: "row",
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
     paddingHorizontal: 16,
     paddingVertical: 14,
     justifyContent: "space-between",
@@ -567,7 +576,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   brandTitle: {
-    color: COLORS.primary,
     fontSize: 18,
     fontWeight: "900",
     letterSpacing: 0.5,
@@ -588,7 +596,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: COLORS.danger,
+    backgroundColor: "#FF6B6B",
   },
   scrollContent: {
     paddingBottom: 30,
@@ -600,7 +608,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 20,
-    backgroundColor: COLORS.surface,
   },
   profilePhotoWrapper: {
     marginBottom: 12,
@@ -610,25 +617,20 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: COLORS.primary,
   },
   mainDefaultPhoto: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: COLORS.surfaceContainer,
     borderWidth: 2,
-    borderColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   heroTitle: {
-    color: COLORS.onSurface,
     fontSize: 22,
     fontWeight: "bold",
   },
   heroSubtitle: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 13,
     marginTop: 2,
     marginBottom: 6,
@@ -639,12 +641,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   locationText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     marginLeft: 4,
   },
   profileDescription: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 13,
     textAlign: "center",
     lineHeight: 18,
@@ -654,13 +654,12 @@ const styles = StyleSheet.create({
   editProfileButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primaryContainer,
     paddingVertical: 9,
     paddingHorizontal: 18,
     borderRadius: 10,
   },
   editProfileText: {
-    color: COLORS.onPrimaryContainer,
+    color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 13,
     marginLeft: 6,
@@ -675,9 +674,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: COLORS.cardBg,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     borderRadius: 14,
     paddingVertical: 14,
   },
@@ -686,19 +683,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statNumber: {
-    color: COLORS.primary,
     fontSize: 18,
     fontWeight: "bold",
   },
   statLabel: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 10,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: COLORS.cardBorder,
   },
 
   // TABS
@@ -706,8 +700,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
-    backgroundColor: COLORS.surface,
   },
   tab: {
     flex: 1,
@@ -719,29 +711,18 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
     gap: 6,
   },
-  activeTab: {
-    borderBottomColor: COLORS.primary,
-  },
   tabText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 12,
-  },
-  activeTabText: {
-    color: COLORS.primary,
-    fontWeight: "bold",
   },
 
   // SECCIONES / CARDS
   sectionContainer: {
     paddingVertical: 18,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.surface,
   },
   card: {
     width: "100%",
-    backgroundColor: COLORS.cardBg,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     borderRadius: 14,
     overflow: "hidden",
     marginBottom: 10,
@@ -758,7 +739,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainer,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -766,15 +746,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "bold",
-    color: COLORS.onSurface,
   },
   cardDetail: {
     fontSize: 12,
-    color: COLORS.onSurfaceVariant,
   },
   itemLocation: {
     fontSize: 12,
-    color: COLORS.primary,
     marginTop: 2,
   },
   emptyContainer: {
@@ -784,12 +761,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: COLORS.onSurface,
     marginTop: 10,
     marginBottom: 4,
   },
   emptyText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 13,
     textAlign: "center",
     fontStyle: "italic",
@@ -812,15 +787,12 @@ const styles = StyleSheet.create({
     height: 95,
     borderRadius: 47.5,
     borderWidth: 2,
-    borderColor: COLORS.primary,
   },
   defaultPhoto: {
     width: 95,
     height: 95,
     borderRadius: 47.5,
-    backgroundColor: COLORS.surfaceContainer,
     borderWidth: 2,
-    borderColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -831,11 +803,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.primaryContainer,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: COLORS.surface,
   },
   photoButtons: {
     flexDirection: "row",
@@ -845,13 +815,12 @@ const styles = StyleSheet.create({
   changePhotoButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primaryContainer,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
   },
   photoButtonText: {
-    color: COLORS.onPrimaryContainer,
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "bold",
     marginLeft: 5,
@@ -860,13 +829,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
   },
   deletePhotoText: {
-    color: COLORS.danger,
+    color: "#FF6B6B",
     fontSize: 12,
     fontWeight: "bold",
     marginLeft: 5,
@@ -876,7 +844,6 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 11,
-    color: COLORS.onSurfaceVariant,
     fontWeight: "bold",
     marginBottom: 6,
   },
@@ -884,16 +851,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(15, 13, 21, 0.6)",
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
   },
   searchInput: {
     flex: 1,
-    color: COLORS.onSurface,
     fontSize: 14,
   },
   textAreaWrap: {
@@ -905,14 +869,13 @@ const styles = StyleSheet.create({
     minHeight: 70,
   },
   primaryButton: {
-    backgroundColor: COLORS.primaryContainer,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 16,
   },
   primaryButtonText: {
-    color: COLORS.onPrimaryContainer,
+    color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 14,
   },
@@ -921,7 +884,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   cancelButtonText: {
-    color: COLORS.onSurfaceVariant,
     fontSize: 13,
   },
 
@@ -935,10 +897,8 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: "100%",
-    backgroundColor: COLORS.surfaceContainerHigh,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     padding: 18,
   },
   modalHeader: {
@@ -947,22 +907,18 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.cardBorder,
     paddingBottom: 8,
   },
   modalHeaderTitle: {
     fontSize: 17,
     fontWeight: "bold",
-    color: COLORS.onSurface,
   },
   modalHeaderSubtitle: {
     fontSize: 12,
-    color: COLORS.onSurfaceVariant,
     marginTop: 2,
   },
   closeButton: {
     padding: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 12,
   },
   notificationItem: {
@@ -974,14 +930,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainer,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
   },
   infoValue: {
     fontSize: 13,
-    color: COLORS.onSurface,
     fontWeight: "bold",
   },
 });

@@ -21,29 +21,9 @@ import Svg, { Path } from 'react-native-svg';
 
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { useTheme } from '../../context/ThemeContext'; // 1. Importamos el hook de temas
 
 const { width } = Dimensions.get('window');
-
-// ======================================================
-// PALETA DE COLORES
-// ======================================================
-
-const COLORS = {
-  primary: '#8B5CF6',          // Morado principal para botones
-  primaryDark: '#1E1B4B',      // Morado oscuro para títulos
-  background: '#3B1578',       // Fondo morado (status bar / safe area)
-
-  cardBg: '#FFFFFF',           // Fondo blanco del formulario
-  cardText: '#1E1B4B',         // Texto principal dentro del formulario
-  cardSubtext: '#6B7280',      // Texto secundario
-
-  inputBg: '#F9FAFB',          // Fondo de los inputs
-  inputBorder: '#E5E7EB',      // Borde suave de inputs
-  inputIcon: '#A78BFA',        // Iconos de los campos
-
-  purpleLink: '#7C3AED',       // Enlaces morados
-  error: '#E11D48',
-};
 
 // Validación con Yup
 const validationSchema = Yup.object().shape({
@@ -58,7 +38,19 @@ const validationSchema = Yup.object().shape({
 
 export default function Login() {
   const router = useRouter();
+  const { theme, colors } = useTheme(); // 2. Extraemos theme y colors globales
   const [mostrarPassword, setMostrarPassword] = useState(false);
+
+  const isDark = theme === 'dark';
+
+  // Variables dinámicas según el tema activo
+  const currentBg = isDark ? '#0F172A' : '#3B1578'; // Fondo superior consistente con la app
+  const cardBg = isDark ? '#1e293b' : '#FFFFFF';
+  const cardText = isDark ? '#FFFFFF' : '#1E1B4B';
+  const cardSubtext = isDark ? '#94a3b8' : '#6B7280';
+  const inputBg = isDark ? '#172033' : '#F9FAFB';
+  const inputBorder = isDark ? '#334155' : '#E5E7EB';
+  const primaryColor = colors.activePurple || '#8B5CF6';
 
   // Formik
   const formik = useFormik({
@@ -93,12 +85,12 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.safeArea}>
-    <StatusBar
-      barStyle="light-content"
-      translucent
-      backgroundColor="transparent"
-    />
+    <View style={[styles.safeArea, { backgroundColor: currentBg }]}>
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboard}
@@ -109,64 +101,57 @@ export default function Login() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* ==================================================
-              SECCIÓN SUPERIOR: IMAGEN DE FONDO + TEXTO
-          ================================================== */}
+          {/*  SECCIÓN SUPERIOR: IMAGEN DE FONDO + TEXTO */}
           <ImageBackground
             source={require('../../assets/perrito.png')}
             style={styles.topHeader}
             imageStyle={styles.headerImage}
             resizeMode="cover"
           >
-            
-
             <View style={styles.welcomeTextContainer}>
               <Text style={styles.welcomeTitle}>Sello{'\n'}Guardián</Text>
               <Text style={styles.welcomeSubtitle}>
-                ¡Bienvenido de nuevo a nuestra comunidad de rescate!
+                ¡Bienvenido de nuevo. Inicia sesión para denunciar, adoptar y seguir tus casos
               </Text>
             </View>
           </ImageBackground>
 
-          {/* ==================================================
-              CURVA SVG SEPARADORA
-          ================================================== */}
+          {/* CURVA SVG SEPARADORA */}
           <View style={styles.svgContainer}>
             <Svg height="50" width={width} viewBox={`0 0 ${width} 50`}>
               <Path
                 d={`M 0 30 Q ${width * 0.4} 0, ${width * 0.75} 25 T ${width} 15 L ${width} 50 L 0 50 Z`}
-                fill={COLORS.cardBg}
+                fill={cardBg}
               />
             </Svg>
           </View>
 
-          {/* ==================================================
-              CONTENEDOR DEL FORMULARIO (TARJETA BLANCA)
-          ================================================== */}
-          <View style={styles.cardContainer}>
-            <Text style={styles.title}>Iniciar Sesión</Text>
+          {/* CONTENEDOR DEL FORMULARIO (TARJETA) */}
+          <View style={[styles.cardContainer, { backgroundColor: cardBg }]}>
+            <Text style={[styles.title, { color: cardText }]}>Iniciar Sesión</Text>
 
             {/* CAMPO: CORREO ELECTRÓNICO */}
             <View style={styles.group}>
-              <Text style={styles.label}>Correo electrónico</Text>
+              <Text style={[styles.label, { color: cardSubtext }]}>Correo electrónico</Text>
 
               <View
                 style={[
                   styles.inputContainer,
+                  { backgroundColor: inputBg, borderColor: inputBorder },
                   formik.touched.email && formik.errors.email && styles.inputError,
                 ]}
               >
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={COLORS.inputIcon}
+                  color={primaryColor}
                   style={styles.inputIcon}
                 />
 
                 <TextInput
-                  style={styles.inputWithIcon}
+                  style={[styles.inputWithIcon, { color: cardText }]}
                   placeholder="Ingresar correo"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={cardSubtext}
                   value={formik.values.email}
                   onChangeText={formik.handleChange('email')}
                   onBlur={formik.handleBlur('email')}
@@ -184,30 +169,31 @@ export default function Login() {
             {/* CAMPO: CONTRASEÑA */}
             <View style={styles.group}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Contraseña</Text>
+                <Text style={[styles.label, { color: cardSubtext }]}>Contraseña</Text>
                 <TouchableOpacity onPress={handleForgotPassword}>
-                  <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
+                  <Text style={[styles.forgot, { color: primaryColor }]}>¿Olvidaste tu contraseña?</Text>
                 </TouchableOpacity>
               </View>
 
               <View
                 style={[
                   styles.passwordContainer,
+                  { backgroundColor: inputBg, borderColor: inputBorder },
                   formik.touched.password &&
-                    formik.errors.password &&
-                    styles.inputError,
+                  formik.errors.password &&
+                  styles.inputError,
                 ]}
               >
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color={COLORS.inputIcon}
+                  color={primaryColor}
                 />
 
                 <TextInput
-                  style={styles.passwordInput}
+                  style={[styles.passwordInput, { color: cardText }]}
                   placeholder="Ingresar contraseña"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={cardSubtext}
                   value={formik.values.password}
                   onChangeText={formik.handleChange('password')}
                   onBlur={formik.handleBlur('password')}
@@ -221,7 +207,7 @@ export default function Login() {
                   <Ionicons
                     name={mostrarPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={21}
-                    color={COLORS.inputIcon}
+                    color={primaryColor}
                   />
                 </TouchableOpacity>
               </View>
@@ -242,7 +228,8 @@ export default function Login() {
               <View
                 style={[
                   styles.checkbox,
-                  formik.values.remember && styles.checkboxActive,
+                  { borderColor: inputBorder },
+                  formik.values.remember && { backgroundColor: primaryColor, borderColor: primaryColor },
                 ]}
               >
                 {formik.values.remember && (
@@ -250,14 +237,14 @@ export default function Login() {
                 )}
               </View>
 
-              <Text style={styles.rememberText}>
+              <Text style={[styles.rememberText, { color: cardSubtext }]}>
                 Recordarme en este dispositivo
               </Text>
             </TouchableOpacity>
 
             {/* BOTÓN DE INGRESO */}
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[styles.loginButton, { backgroundColor: primaryColor }]}
               onPress={formik.handleSubmit}
               activeOpacity={0.85}
               disabled={formik.isSubmitting}
@@ -268,13 +255,13 @@ export default function Login() {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: isDark ? '#334155' : '#F3F4F6' }]} />
 
             {/* FOOTER */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>¿No tienes una cuenta?</Text>
+              <Text style={[styles.footerText, { color: cardSubtext }]}>¿No tienes una cuenta?</Text>
               <TouchableOpacity onPress={handleRegister}>
-                <Text style={styles.footerLink}>Regístrate aquí</Text>
+                <Text style={[styles.footerLink, { color: primaryColor }]}>Regístrate aquí</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -287,7 +274,6 @@ export default function Login() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0d0d0d',
   },
 
   keyboard: {
@@ -299,19 +285,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
 
-  // ======================================================
-  // SECCIÓN SUPERIOR: IMAGEN DE FONDO Y BIENVENIDA
-  // ======================================================
   topHeader: {
     width: '100%',
     height: 300,
     justifyContent: 'flex-end',
     paddingHorizontal: 24,
-    paddingBottom: 60, // espacio para la curva blanca
+    paddingBottom: 60,
   },
 
   headerImage: {
-  transform: [{ scale: 1.15 }, { translateX: 25 }],
+    transform: [{ scale: 1.15 }, { translateX: 25 }],
   },
 
   welcomeTextContainer: {
@@ -340,44 +323,32 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
   },
 
-  // ======================================================
-  // CURVA SVG
-  // ======================================================
   svgContainer: {
     width: '100%',
     height: 50,
-    marginTop: -50, // sube la curva sobre la imagen
+    marginTop: -50,
     marginBottom: -1,
     position: 'relative',
   },
 
-  // ======================================================
-  // CONTENEDOR BLANCO
-  // ======================================================
   cardContainer: {
     width: '100%',
-    backgroundColor: COLORS.cardBg,
     paddingHorizontal: 28,
     paddingTop: 8,
     paddingBottom: 40,
   },
 
   title: {
-    color: COLORS.primaryDark,
     fontSize: 30,
     fontWeight: '800',
     marginBottom: 20,
   },
 
-  // ======================================================
-  // INPUTS
-  // ======================================================
   group: {
     marginBottom: 18,
   },
 
   label: {
-    color: COLORS.cardSubtext,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
@@ -391,16 +362,13 @@ const styles = StyleSheet.create({
   },
 
   forgot: {
-    color: COLORS.purpleLink,
     fontSize: 12,
     fontWeight: '600',
   },
 
   inputContainer: {
     height: 52,
-    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.inputBorder,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -408,7 +376,7 @@ const styles = StyleSheet.create({
   },
 
   inputError: {
-    borderColor: COLORS.error,
+    borderColor: '#E11D48',
   },
 
   inputIcon: {
@@ -418,15 +386,12 @@ const styles = StyleSheet.create({
   inputWithIcon: {
     flex: 1,
     height: '100%',
-    color: COLORS.cardText,
     fontSize: 14,
   },
 
   passwordContainer: {
     height: 52,
-    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.inputBorder,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -437,22 +402,18 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     height: '100%',
-    color: COLORS.cardText,
     fontSize: 14,
     marginLeft: 10,
     marginRight: 10,
   },
 
   error: {
-    color: COLORS.error,
+    color: '#E11D48',
     fontSize: 12,
     marginTop: 6,
     marginLeft: 4,
   },
 
-  // ======================================================
-  // CHECKBOX Y BOTÓN
-  // ======================================================
   remember: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -464,26 +425,18 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
     borderRadius: 6,
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  checkboxActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-
   rememberText: {
-    color: COLORS.cardSubtext,
     fontSize: 13,
   },
 
   loginButton: {
     height: 54,
-    backgroundColor: COLORS.primary,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -499,14 +452,10 @@ const styles = StyleSheet.create({
 
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
     marginTop: 24,
     marginBottom: 20,
   },
 
-  // ======================================================
-  // FOOTER
-  // ======================================================
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -514,15 +463,12 @@ const styles = StyleSheet.create({
   },
 
   footerText: {
-    color: COLORS.cardSubtext,
     fontSize: 13,
     marginRight: 6,
   },
 
   footerLink: {
-    color: COLORS.purpleLink,
     fontSize: 13,
     fontWeight: '700',
   },
-
 });

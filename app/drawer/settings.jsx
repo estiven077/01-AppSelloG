@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,86 +14,42 @@ import {
   UIManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useTheme } from "../../context/ThemeContext";
 
-// Habilitar animaciones para Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// PALETA DE COLORES - SELLO GUARDIÁN
-const COLORS = {
-  background: "#0A0C0E",
-  surface: "#12161A",
-  activePurple: "#A855F7",
-  accent: "#C084FC",
-  textLight: "#F8FAFC",
-  textMuted: "#CBD5E1",
-  border: "#242A30",
-};
-
 export default function SettingsScreen() {
   const router = useRouter();
-
-  const [theme, setTheme] = useState("dark");
+  const { theme, colors, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
+  const [locationAccess, setLocationAccess] = useState(true);
   const [showThemeToggle, setShowThemeToggle] = useState(false);
 
-  // CARGAR CONFIGURACIÓN AL INICIAR
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem("app_theme");
-      const savedNotifications = await AsyncStorage.getItem("notifications_enabled");
-
-      if (savedTheme) {
-        setTheme(savedTheme);
-      } else {
-        setTheme("dark");
-      }
-
-      if (savedNotifications !== null) {
-        setNotifications(savedNotifications === "true");
-      }
-    } catch (error) {
-      console.error("Error cargando configuración:", error);
-    }
-  };
-
-  // CAMBIAR TEMA CON SWITCH
-  const changeThemeSwitch = async (isDark) => {
-    try {
-      const newTheme = isDark ? "dark" : "light";
-      setTheme(newTheme);
-      await AsyncStorage.setItem("app_theme", newTheme);
-    } catch (error) {
-      console.error("Error guardando el tema:", error);
-    }
-  };
-
-  // ACTIVAR O DESACTIVAR NOTIFICACIONES
-  const changeNotifications = async (value) => {
-    try {
-      setNotifications(value);
-      await AsyncStorage.setItem("notifications_enabled", value.toString());
-    } catch (error) {
-      console.error("Error guardando las notificaciones:", error);
-    }
-  };
-
-  // Desplegar u ocultar el switch de apariencia
   const toggleThemeDropdown = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowThemeToggle(!showThemeToggle);
   };
 
+  const handleClearCache = () => {
+    Alert.alert(
+      "Limpiar caché",
+      "¿Deseas liberar espacio borrando las imágenes y datos temporales guardados?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Limpiar", style: "destructive", onPress: () => Alert.alert("Éxito", "Caché liberada correctamente.") },
+      ]
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
+      />
 
       <ScrollView
         style={styles.scrollContainer}
@@ -107,294 +63,250 @@ export default function SettingsScreen() {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={COLORS.textLight}
-            />
+            <Ionicons name="arrow-back" size={24} color={colors.textLight} />
           </TouchableOpacity>
-
-          <Text style={styles.title}>Configuración</Text>
+          <Text style={[styles.title, { color: colors.textLight }]}>Configuración</Text>
         </View>
 
         {/* SECCIÓN CUENTA */}
-        <Text style={styles.sectionTitle}>Cuenta</Text>
-
-        <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Cuenta</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.option, styles.lastOption]}
+            style={[styles.option, { borderBottomColor: colors.border }]}
             onPress={() => router.push("/Perfil")}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="person-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="person-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Mi perfil</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Mi perfil</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 Edita tus datos personales y de cuenta
               </Text>
             </View>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
 
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            />
+          <TouchableOpacity
+            style={[styles.option, styles.lastOption]}
+            onPress={() => router.push("/MisAdopciones")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="paw-outline" size={22} color={colors.activePurple} />
+            </View>
+            <View style={styles.optionContent}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Mis solicitudes y reportes</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
+                Historial de adopciones y casos reportados
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* SECCIÓN PREFERENCIAS */}
-        <Text style={styles.sectionTitle}>Preferencias</Text>
-
-        <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Preferencias</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* NOTIFICACIONES */}
-          <View style={styles.option}>
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="notifications-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+          <View style={[styles.option, { borderBottomColor: colors.border }]}>
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="notifications-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Notificaciones</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Notificaciones</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 Recibe avisos sobre adopciones y denuncias
               </Text>
             </View>
-
             <Switch
               value={notifications}
-              onValueChange={changeNotifications}
-              trackColor={{
-                false: "#242A30",
-                true: COLORS.activePurple,
-              }}
+              onValueChange={setNotifications}
+              trackColor={{ false: colors.border, true: colors.activePurple }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+
+          {/* UBICACIÓN */}
+          <View style={[styles.option, { borderBottomColor: colors.border }]}>
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="location-outline" size={22} color={colors.activePurple} />
+            </View>
+            <View style={styles.optionContent}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Servicios de ubicación</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
+                Para mostrar alertas y mascotas cercanas
+              </Text>
+            </View>
+            <Switch
+              value={locationAccess}
+              onValueChange={setLocationAccess}
+              trackColor={{ false: colors.border, true: colors.activePurple }}
               thumbColor="#FFFFFF"
             />
           </View>
 
           {/* APARIENCIA VISUAL */}
           <TouchableOpacity
-            style={[styles.option, !showThemeToggle && styles.lastOption]}
+            style={[styles.option, !showThemeToggle && styles.lastOption, { borderBottomColor: colors.border }]}
             onPress={toggleThemeDropdown}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name={theme === "dark" ? "moon-outline" : "sunny-outline"}
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name={theme === "dark" ? "moon-outline" : "sunny-outline"} size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Apariencia visual</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Apariencia visual</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 {theme === "dark" ? "Modo oscuro activado" : "Modo claro activado"}
               </Text>
             </View>
-
-            <Ionicons
-              name={showThemeToggle ? "chevron-down-outline" : "chevron-forward-outline"}
-              size={20}
-              color={COLORS.textMuted}
-            />
+            <Ionicons name={showThemeToggle ? "chevron-down-outline" : "chevron-forward-outline"} size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {/* SUBMENÚ DESPLEGABLE CORREGIDO (Alineado con el texto principal) */}
+          {/* SUBMENÚ MODO OSCURO */}
           {showThemeToggle && (
-            <View style={[styles.subOptionContainer, styles.lastOption]}>
+            <View style={[styles.subOptionContainer, styles.lastOption, { backgroundColor: theme === "dark" ? "rgba(18, 22, 26, 0.5)" : "rgba(241, 245, 249, 0.5)", borderBottomColor: colors.border }]}>
               <View style={styles.subOptionContent}>
                 <View style={styles.subIconPlaceholder} />
-                <Text style={styles.subOptionTitle}>Modo oscuro</Text>
+                <View>
+                  <Text style={[styles.subOptionTitle, { color: colors.textLight }]}>Modo oscuro / claro</Text>
+                  <Text style={[styles.subOptionSubtitle, { color: colors.textMuted }]}>Cambiar estilo visual</Text>
+                </View>
               </View>
-
-              <Switch
-                value={theme === "dark"}
-                onValueChange={changeThemeSwitch}
-                trackColor={{
-                  false: "#242A30",
-                  true: COLORS.activePurple,
-                }}
-                thumbColor="#FFFFFF"
-              />
+              <View style={styles.switchWrapper}>
+                <Switch
+                  value={theme === "dark"}
+                  onValueChange={toggleTheme}
+                  trackColor={{ false: "#cbd5e1", true: colors.activePurple }}
+                  thumbColor={theme === "dark" ? "#ffffff" : "#334155"}
+                />
+                <Ionicons
+                  name={theme === "dark" ? "moon" : "sunny"}
+                  size={14}
+                  color={theme === "dark" ? colors.activePurple : "#f59e0b"}
+                  style={styles.switchIconOverlay}
+                />
+              </View>
             </View>
           )}
 
           {/* IDIOMA */}
           <TouchableOpacity
             style={[styles.option, styles.lastOption]}
-            onPress={() =>
-              Alert.alert(
-                "Idioma",
-                "Actualmente Sello Guardián está disponible únicamente en español."
-              )
-            }
+            onPress={() => Alert.alert("Idioma", "Actualmente Sello Guardián está disponible únicamente en español.")}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="language-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="language-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Idioma</Text>
-              <Text style={styles.optionDescription}>Español (Latinoamérica)</Text>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Idioma</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>Español (Latinoamérica)</Text>
             </View>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
 
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            />
+        {/* SECCIÓN DATOS Y ALMACENAMIENTO */}
+        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Almacenamiento y Datos</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.option, styles.lastOption]}
+            onPress={handleClearCache}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="trash-bin-outline" size={22} color={colors.activePurple} />
+            </View>
+            <View style={styles.optionContent}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Limpiar caché</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
+                Libera espacio eliminando imágenes temporales
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* SECCIÓN SEGURIDAD */}
-        <Text style={styles.sectionTitle}>Seguridad y privacidad</Text>
-
-        <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Seguridad y privacidad</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.option}
+            style={[styles.option, { borderBottomColor: colors.border }]}
             onPress={() => router.push("/Privacidad")}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="shield-checkmark-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Privacidad y seguridad</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Privacidad y seguridad</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 Gestiona tus permisos y tratamiento de datos
               </Text>
             </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            />
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.option, styles.lastOption]}
-            onPress={() =>
-              Alert.alert(
-                "Términos y condiciones",
-                "Consulta los términos legales y políticas de uso de Sello Guardián."
-              )
-            }
+            onPress={() => Alert.alert("Términos y condiciones", "Consulta los términos legales y políticas de uso de Sello Guardián.")}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="document-text-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="document-text-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Términos y condiciones</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Términos y condiciones</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 Condiciones del servicio y políticas
               </Text>
             </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            />
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* SECCIÓN AYUDA */}
-        <Text style={styles.sectionTitle}>Ayuda</Text>
-
-        <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Ayuda</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.option}
-            onPress={() =>
-              Alert.alert(
-                "Ayuda y soporte",
-                "Comunícate con nuestro equipo de soporte para resolver dudas o reportar fallos."
-              )
-            }
+            style={[styles.option, { borderBottomColor: colors.border }]}
+            onPress={() => Alert.alert("Ayuda y soporte", "Comunícate con nuestro equipo de soporte para resolver dudas o reportar fallos.")}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="help-circle-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="help-circle-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Ayuda y soporte</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Ayuda y soporte</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 Centro de ayuda y atención al usuario
               </Text>
             </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            />
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.option, styles.lastOption]}
-            onPress={() =>
-              Alert.alert(
-                "Sello Guardián",
-                "Iniciativa enfocada en la protección, adopción y lucha contra el maltrato animal."
-              )
-            }
+            onPress={() => Alert.alert("Sello Guardián", "Iniciativa enfocada en la protección, adopción y lucha contra el maltrato animal.")}
             activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={COLORS.activePurple}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme === "dark" ? "rgba(168, 85, 247, 0.12)" : "rgba(147, 51, 234, 0.1)" }]}>
+              <Ionicons name="information-circle-outline" size={22} color={colors.activePurple} />
             </View>
-
             <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>Acerca de Sello Guardián</Text>
-              <Text style={styles.optionDescription}>
+              <Text style={[styles.optionTitle, { color: colors.textLight }]}>Acerca de Sello Guardián</Text>
+              <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
                 Versión del proyecto y créditos
               </Text>
             </View>
-
-            <Ionicons
-              name="chevron-forward-outline"
-              size={20}
-              color={COLORS.textMuted}
-            />
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.version}>Sello Guardián • Versión 1.0.0</Text>
+        <Text style={[styles.version, { color: colors.textMuted }]}>Sello Guardián • Versión 1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -403,7 +315,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   scrollContainer: {
@@ -423,12 +334,10 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    color: COLORS.textLight,
     fontSize: 24,
     fontWeight: "bold",
   },
   sectionTitle: {
-    color: COLORS.accent,
     fontSize: 13,
     fontWeight: "bold",
     textTransform: "uppercase",
@@ -439,10 +348,8 @@ const styles = StyleSheet.create({
   },
   section: {
     marginHorizontal: 20,
-    backgroundColor: COLORS.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: "hidden",
   },
   option: {
@@ -451,7 +358,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   lastOption: {
     borderBottomWidth: 0,
@@ -460,7 +366,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "rgba(168, 85, 247, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -470,26 +375,21 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   optionTitle: {
-    color: COLORS.textLight,
     fontSize: 15,
     fontWeight: "600",
   },
   optionDescription: {
-    color: COLORS.textMuted,
     fontSize: 13,
     marginTop: 2,
     lineHeight: 18,
   },
-  /* ESTILOS DEL SUBMENÚ ALINEADO */
   subOptionContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "rgba(18, 22, 26, 0.5)",
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   subOptionContent: {
     flexDirection: "row",
@@ -497,16 +397,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subIconPlaceholder: {
-    width: 42, // Ancho exacto del contenedor del icono superior para guardar la misma distancia
+    width: 42,
     marginRight: 14,
   },
   subOptionTitle: {
-    color: COLORS.textLight,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
+  },
+  subOptionSubtitle: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  switchWrapper: {
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  switchIconOverlay: {
+    position: "absolute",
+    pointerEvents: "none",
+    right: 6,
   },
   version: {
-    color: COLORS.textMuted,
     textAlign: "center",
     fontSize: 13,
     marginTop: 35,

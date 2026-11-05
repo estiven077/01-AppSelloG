@@ -2,36 +2,32 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   SafeAreaView,
   FlatList,
   Image,
   TextInput,
   StatusBar,
-  Platform,
+  Modal,
+  ScrollView,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
-// Importa tu Navbar reutilizable tal como en el Home
+// Importa tu Navbar reutilizable
 import Navbar from "../../components/Navbar";
+
+// Importa los estilos externos
+import { styles } from "../../styles/Favoritos";
+
+const CATEGORIES = ["Todos", "Perros", "Gatos", "Cachorros"];
 
 const COLORS = {
   surface: "#0F172A",
-  cardBg: "rgba(15, 23, 42, 0.75)",
-  cardBorder: "rgba(255, 255, 255, 0.12)",
-  primary: "#7C3AED",
-  primaryContainer: "#7C3AED",
-  onPrimaryContainer: "#FFFFFF",
-  onSurface: "#FFFFFF",
-  onSurfaceVariant: "#C4B5FD",
-  heartBg: "rgba(225, 29, 72, 0.2)",
   heartIcon: "#F43F5E",
-  chipInactive: "#1E293B",
+  onSurfaceVariant: "#94a3b8",
 };
-
-const CATEGORIES = ["Todos", "Perros", "Gatos", "Otros"];
 
 export default function FavoritosScreen() {
   const router = useRouter();
@@ -39,11 +35,12 @@ export default function FavoritosScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
-
-  // Lista de mascotas favoritas (Inicia vacía)
   const [favorites, setFavorites] = useState([]);
 
-  // Escuchar parámetros entrantes desde el Home (incluyendo el parámetro de refresco params?.t)
+  // Estado para el modal de detalle con toda la información real
+  const [detalleMascotaModal, setDetalleMascotaModal] = useState(null);
+
+  // Sincronizar parámetros entrantes desde el Home con la información REAL
   useEffect(() => {
     if (params?.newPet) {
       try {
@@ -51,7 +48,6 @@ export default function FavoritosScreen() {
         setFavorites((prevFavorites) => {
           const exists = prevFavorites.find((item) => item.id === petData.id);
           if (exists) {
-            // Si la mascota ya estaba registrada en la lista pero se había desmarcado, la vuelve a activar
             return prevFavorites.map((item) =>
               item.id === petData.id ? { ...item, isFavorite: true } : item
             );
@@ -62,8 +58,14 @@ export default function FavoritosScreen() {
               type: petData.type || "Perros",
               breed: petData.breed || "Mestizo",
               age: petData.age || "2 años",
+              gender: petData.gender || "Hembra",
               location: petData.location || "Popayán",
               image: petData.image,
+              status: petData.status || "En Adopción",
+              vaccines: petData.vaccines || "Al día (Rabia, Parvovirus)",
+              medicalHistory: petData.medicalHistory || "Esterilizada, excelente salud general.",
+              history: petData.history || "Es una mascota muy juguetona, cariñosa y llena de energía.",
+              weight: petData.weight || "10 kg",
               isFavorite: true,
             };
             return [formattedPet, ...prevFavorites];
@@ -73,7 +75,7 @@ export default function FavoritosScreen() {
         console.error("Error al procesar la mascota enviada:", error);
       }
     }
-  }, [params?.newPet, params?.t]); // Se añade params?.t como dependencia para detectar re-agregaciones
+  }, [params?.newPet, params?.t]);
 
   // Alternar o remover de favoritos
   const toggleFavorite = (id) => {
@@ -84,34 +86,40 @@ export default function FavoritosScreen() {
     );
   };
 
-  // Filtrado: SOLO MUESTRA LAS MASCOTAS CON isFavorite: true
   const filteredFavorites = favorites.filter((item) => {
     if (!item.isFavorite) return false;
 
     const matchesCategory =
-      selectedCategory === "Todos" || item.type === selectedCategory;
+      selectedCategory === "Todos" ||
+      item.type.toLowerCase() === selectedCategory.toLowerCase() ||
+      (selectedCategory === "Cachorros" && item.age?.toLowerCase().includes("mes"));
+
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.breed.toLowerCase().includes(searchQuery.toLowerCase());
+      item.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return matchesCategory && matchesSearch;
   });
+
+  function handleIniciarAdopcion(pet) {
+    setDetalleMascotaModal(null);
+    Alert.alert("Formulario de Adopción", `Iniciando proceso de adopción responsable para ${pet.name}.`);
+  }
 
   const renderPetCard = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.85}
-      onPress={() => router.push(`/DetalleMascota?id=${item.id}`)}
+      onPress={() => setDetalleMascotaModal(item)}
     >
       <View style={styles.imageContainer}>
         <Image source={{ uri: item.image }} style={styles.cardImage} />
 
-        {/* Badge de Categoría */}
         <View style={styles.tagBadge}>
-          <Text style={styles.tagBadgeText}>{item.type}</Text>
+          <Text style={styles.tagBadgeText}>{item.type ? item.type.toUpperCase() : "PERROS"}</Text>
         </View>
 
-        {/* Botón de Corazón flotante */}
         <TouchableOpacity
           style={styles.heartButton}
           onPress={() => toggleFavorite(item.id)}
@@ -119,10 +127,8 @@ export default function FavoritosScreen() {
         >
           <Ionicons
             name={item.isFavorite ? "heart" : "heart-outline"}
-            size={18}
-            color={
-              item.isFavorite ? COLORS.heartIcon : COLORS.onSurfaceVariant
-            }
+            size={16}
+            color={COLORS.heartIcon}
           />
         </TouchableOpacity>
       </View>
@@ -132,33 +138,43 @@ export default function FavoritosScreen() {
           <Text style={styles.petName} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.petBreed} numberOfLines={1}>
-            {item.breed}
+          {item.vaccines && (
+            <View style={styles.statusChip}>
+              <Text style={styles.statusChipText} numberOfLines={1}>
+                Vacunada
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.petBreed} numberOfLines={1}>
+          {item.breed}
+        </Text>
+
+        <View style={styles.detailsRow}>
+          <Ionicons
+            name="location-outline"
+            size={12}
+            color={COLORS.onSurfaceVariant}
+          />
+          <Text style={styles.detailText} numberOfLines={1}>
+            {item.age} • {item.location}
           </Text>
         </View>
 
-        <View style={styles.detailsRow}>
-          <View style={styles.detailItem}>
-            <Ionicons
-              name="gift-outline"
-              size={12}
-              color={COLORS.onSurfaceVariant}
-            />
-            <Text style={styles.detailText}>{item.age}</Text>
-          </View>
-
-          <View style={styles.detailItem}>
-            <Ionicons
-              name="location-outline"
-              size={12}
-              color={COLORS.onSurfaceVariant}
-            />
-            <Text style={styles.detailText}>{item.location}</Text>
-          </View>
-        </View>
+        <TouchableOpacity
+          style={styles.adoptButton}
+          activeOpacity={0.85}
+          onPress={() => setDetalleMascotaModal(item)}
+        >
+          <Text style={styles.adoptButtonText}>Ver</Text>
+          <Ionicons name="eye-outline" size={14} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
+
+  const totalFavoritesCount = favorites.filter((f) => f.isFavorite).length;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -171,23 +187,20 @@ export default function FavoritosScreen() {
       {/* NAVBAR REUTILIZABLE */}
       <Navbar unreadNotifications={2} />
 
-      {/* HEADER DE LA SECCIÓN FAVORITOS CON EL BADGE EN LA ESQUINA */}
+      {/* HEADER */}
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionBadge}>TUS MASCOTAS FAVORITAS</Text>
-          <Text style={styles.headerTitle}>Guardados</Text>
+          <Text style={styles.headerTitle}>Guardados & Adopción</Text>
         </View>
 
-        {/* Badge con el conteo de favoritos llevado hacia la esquina */}
         <View style={styles.favCountBadge}>
-          <Ionicons name="heart" size={16} color={COLORS.heartIcon} />
-          <Text style={styles.favCountText}>
-            {favorites.filter((f) => f.isFavorite).length}
-          </Text>
+          <Ionicons name="heart" size={14} color={COLORS.heartIcon} />
+          <Text style={styles.favCountText}>{totalFavoritesCount}</Text>
         </View>
       </View>
 
-      {/* BARRA DE BÚSQUEDA */}
+      {/* BÚSQUEDA */}
       <View style={styles.searchContainer}>
         <Ionicons
           name="search"
@@ -197,7 +210,7 @@ export default function FavoritosScreen() {
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar mascota o raza..."
+          placeholder="Buscar mascota, raza o ciudad..."
           placeholderTextColor={COLORS.onSurfaceVariant}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -213,7 +226,7 @@ export default function FavoritosScreen() {
         )}
       </View>
 
-      {/* CHIPS DE CATEGORÍAS */}
+      {/* CATEGORÍAS */}
       <View style={styles.categoriesContainer}>
         {CATEGORIES.map((cat) => {
           const isSelected = selectedCategory === cat;
@@ -234,12 +247,19 @@ export default function FavoritosScreen() {
               >
                 {cat}
               </Text>
+              {cat === "Todos" && (
+                <View style={[styles.chipCounter, isSelected && styles.chipCounterActive]}>
+                  <Text style={[styles.chipCounterText, isSelected && styles.chipCounterTextActive]}>
+                    {favorites.length}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* CONTENIDO PRINCIPAL */}
+      {/* LISTA DE FAVORITOS */}
       <View style={styles.contentArea}>
         {filteredFavorites.length > 0 ? (
           <FlatList
@@ -265,200 +285,124 @@ export default function FavoritosScreen() {
           </View>
         )}
       </View>
+
+      {/* ================= MODAL CON INFORMACIÓN REAL DETALLADA ================= */}
+      <Modal
+        visible={!!detalleMascotaModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setDetalleMascotaModal(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+
+            {/* Header flotante con botón atrás y corazón */}
+            <View style={styles.floatingHeader}>
+              <TouchableOpacity
+                style={styles.iconCircleBtn}
+                onPress={() => setDetalleMascotaModal(null)}
+              >
+                <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconCircleBtn}
+                onPress={() => detalleMascotaModal && toggleFavorite(detalleMascotaModal.id)}
+              >
+                <Ionicons
+                  name={detalleMascotaModal?.isFavorite ? "heart" : "heart-outline"}
+                  size={20}
+                  color={COLORS.heartIcon}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 35 }}>
+
+              {/* Imagen de la mascota superior */}
+              <View style={styles.heroImageContainer}>
+                {detalleMascotaModal?.image && (
+                  <Image
+                    source={{ uri: detalleMascotaModal.image }}
+                    style={styles.heroImage}
+                  />
+                )}
+              </View>
+
+              {/* Contenido flotante con los datos reales */}
+              <View style={styles.detailsCardBody}>
+
+                {/* Nombre y Ubicación */}
+                <View style={styles.nameLocationRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.petProfileName}>{detalleMascotaModal?.name}</Text>
+                    <Text style={styles.petProfileLocation}>
+                      📍 {detalleMascotaModal?.location || "Popayán"}
+                    </Text>
+                  </View>
+                  <View style={styles.statusBadgeModal}>
+                    <Text style={styles.statusBadgeModalText}>{detalleMascotaModal?.status || "En Adopción"}</Text>
+                  </View>
+                </View>
+
+                {/* Tarjetas de Estadísticas (Edad, Sexo, Raza) */}
+                <View style={styles.statsRow}>
+                  <View style={styles.statCard}>
+                    <Ionicons name="time-outline" size={16} color="#7C3AED" />
+                    <Text style={styles.statCardValue}>{detalleMascotaModal?.age}</Text>
+                    <Text style={styles.statCardLabel}>Edad</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Ionicons name="female-outline" size={16} color="#7C3AED" />
+                    <Text style={styles.statCardValue}>{detalleMascotaModal?.gender}</Text>
+                    <Text style={styles.statCardLabel}>Sexo</Text>
+                  </View>
+                  <View style={styles.statCard}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color="#7C3AED" />
+                    <Text style={styles.statCardValue} numberOfLines={1}>{detalleMascotaModal?.breed}</Text>
+                    <Text style={styles.statCardLabel}>Raza</Text>
+                  </View>
+                </View>
+
+                {/* Historial Médico y Vacunas */}
+                <View style={styles.medicalBox}>
+                  <View style={styles.medicalItemRow}>
+                    <Ionicons name="medical" size={16} color="#38bdf8" />
+                    <Text style={styles.medicalItemTitle}>Vacunas:</Text>
+                    <Text style={styles.medicalItemText}>{detalleMascotaModal?.vaccines}</Text>
+                  </View>
+                  <View style={[styles.medicalItemRow, { marginTop: 10 }]}>
+                    <Ionicons name="document-text" size={16} color="#34D399" />
+                    <Text style={styles.medicalItemTitle}>Historial:</Text>
+                    <Text style={styles.medicalItemText}>{detalleMascotaModal?.medicalHistory}</Text>
+                  </View>
+                </View>
+
+                {/* Sección "Sobre [Nombre]" con la historia real */}
+                <View style={styles.aboutSectionBox}>
+                  <Text style={styles.aboutHeaderTitle}>
+                    Sobre <Text style={{ color: "#7C3AED" }}>{detalleMascotaModal?.name}</Text>:
+                  </Text>
+                  <Text style={styles.aboutTextContent}>
+                    {detalleMascotaModal?.history}
+                  </Text>
+                </View>
+
+                {/* Botón de Adopción Real */}
+                <TouchableOpacity
+                  style={styles.adoptActionButton}
+                  activeOpacity={0.85}
+                  onPress={() => detalleMascotaModal && handleIniciarAdopcion(detalleMascotaModal)}
+                >
+                  <Text style={styles.adoptActionButtonText}>Adoptar</Text>
+                  <Ionicons name="paw" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+
+              </View>
+            </ScrollView>
+
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  sectionBadge: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: "bold",
-    letterSpacing: 1,
-  },
-  headerTitle: {
-    color: COLORS.onSurface,
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  favCountBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.heartBg,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-  },
-  favCountText: {
-    color: COLORS.onSurface,
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(15, 13, 21, 0.6)",
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 10,
-    paddingHorizontal: 14,
-    height: 44,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.onSurface,
-    fontSize: 14,
-  },
-  categoriesContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    marginVertical: 8,
-    gap: 10,
-  },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.chipInactive,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  categoryChipActive: {
-    backgroundColor: COLORS.primaryContainer,
-    borderColor: COLORS.primaryContainer,
-  },
-  categoryText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  categoryTextActive: {
-    color: COLORS.onPrimaryContainer,
-  },
-  contentArea: {
-    flex: 1,
-    paddingHorizontal: 16,
-    marginTop: 8,
-  },
-  columnWrapper: {
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  listContent: {
-    paddingBottom: 24,
-  },
-  card: {
-    width: "48%",
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    overflow: "hidden",
-  },
-  imageContainer: {
-    position: "relative",
-    width: "100%",
-    height: 120,
-  },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-  },
-  tagBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: COLORS.primaryContainer,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  tagBadgeText: {
-    color: COLORS.onPrimaryContainer,
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  heartButton: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardInfo: {
-    padding: 10,
-  },
-  nameRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  petName: {
-    color: COLORS.onSurface,
-    fontSize: 15,
-    fontWeight: "bold",
-    flex: 1,
-  },
-  petBreed: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    marginLeft: 4,
-  },
-  detailsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  detailText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginTop: 40,
-  },
-  emptyTitle: {
-    color: COLORS.onSurface,
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 12,
-  },
-  emptyDescription: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 13,
-    textAlign: "center",
-    marginTop: 6,
-  },
-});
