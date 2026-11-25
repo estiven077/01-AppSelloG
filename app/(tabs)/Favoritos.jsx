@@ -14,24 +14,28 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTheme } from "../../context/ThemeContext";
 
 // Importa tu Navbar reutilizable
 import Navbar from "../../components/Navbar";
 
-// Importa los estilos externos
-import { styles } from "../../styles/Favoritos";
+// Importa la función de estilos externos
+import { createStyles } from "../../styles/Favoritos";
 
 const CATEGORIES = ["Todos", "Perros", "Gatos", "Cachorros"];
 
 const COLORS = {
-  surface: "#0F172A",
   heartIcon: "#F43F5E",
-  onSurfaceVariant: "#94a3b8",
 };
 
 export default function FavoritosScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { theme, colors } = useTheme();
+
+  // Generamos los estilos dinámicos pasándole los colores y el tema actual
+  const styles = createStyles(colors, theme);
+  const isDark = theme === "dark";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
@@ -155,7 +159,7 @@ export default function FavoritosScreen() {
           <Ionicons
             name="location-outline"
             size={12}
-            color={COLORS.onSurfaceVariant}
+            color={isDark ? "#94a3b8" : colors.textMuted}
           />
           <Text style={styles.detailText} numberOfLines={1}>
             {item.age} • {item.location}
@@ -179,8 +183,8 @@ export default function FavoritosScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.surface}
+        barStyle={theme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={colors.background}
         translucent={false}
       />
 
@@ -205,13 +209,13 @@ export default function FavoritosScreen() {
         <Ionicons
           name="search"
           size={18}
-          color={COLORS.onSurfaceVariant}
+          color={isDark ? "#94a3b8" : colors.textMuted}
           style={styles.searchIcon}
         />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar mascota, raza o ciudad..."
-          placeholderTextColor={COLORS.onSurfaceVariant}
+          placeholderTextColor={isDark ? "#94a3b8" : colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -220,7 +224,7 @@ export default function FavoritosScreen() {
             <Ionicons
               name="close-circle"
               size={18}
-              color={COLORS.onSurfaceVariant}
+              color={isDark ? "#94a3b8" : colors.textMuted}
             />
           </TouchableOpacity>
         )}
@@ -276,7 +280,7 @@ export default function FavoritosScreen() {
             <Ionicons
               name="paw-outline"
               size={54}
-              color={COLORS.onSurfaceVariant}
+              color={isDark ? "#94a3b8" : colors.textMuted}
             />
             <Text style={styles.emptyTitle}>No tienes mascotas guardadas</Text>
             <Text style={styles.emptyDescription}>
@@ -347,17 +351,17 @@ export default function FavoritosScreen() {
                 {/* Tarjetas de Estadísticas (Edad, Sexo, Raza) */}
                 <View style={styles.statsRow}>
                   <View style={styles.statCard}>
-                    <Ionicons name="time-outline" size={16} color="#7C3AED" />
+                    <Ionicons name="time-outline" size={16} color={colors.activePurple} />
                     <Text style={styles.statCardValue}>{detalleMascotaModal?.age}</Text>
                     <Text style={styles.statCardLabel}>Edad</Text>
                   </View>
                   <View style={styles.statCard}>
-                    <Ionicons name="female-outline" size={16} color="#7C3AED" />
+                    <Ionicons name="female-outline" size={16} color={colors.activePurple} />
                     <Text style={styles.statCardValue}>{detalleMascotaModal?.gender}</Text>
                     <Text style={styles.statCardLabel}>Sexo</Text>
                   </View>
                   <View style={styles.statCard}>
-                    <Ionicons name="shield-checkmark-outline" size={16} color="#7C3AED" />
+                    <Ionicons name="shield-checkmark-outline" size={16} color={colors.activePurple} />
                     <Text style={styles.statCardValue} numberOfLines={1}>{detalleMascotaModal?.breed}</Text>
                     <Text style={styles.statCardLabel}>Raza</Text>
                   </View>
@@ -380,7 +384,7 @@ export default function FavoritosScreen() {
                 {/* Sección "Sobre [Nombre]" con la historia real */}
                 <View style={styles.aboutSectionBox}>
                   <Text style={styles.aboutHeaderTitle}>
-                    Sobre <Text style={{ color: "#7C3AED" }}>{detalleMascotaModal?.name}</Text>:
+                    Sobre <Text style={{ color: colors.activePurple }}>{detalleMascotaModal?.name}</Text>:
                   </Text>
                   <Text style={styles.aboutTextContent}>
                     {detalleMascotaModal?.history}

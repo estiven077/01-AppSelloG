@@ -13,7 +13,7 @@ export const THEMES = {
     textMuted: "#CBD5E1",
     border: "#242A30",
 
-    navbar: "#0F172A",
+    navbar: "#000000",
     footer: "#0D1015",
     drawer: "#0A0C0E", 
   },

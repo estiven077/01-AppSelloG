@@ -24,6 +24,10 @@ import Navbar from "../../components/Navbar";
 // Importa los estilos desde tu archivo externo
 import { styles } from "../../styles/Home";
 
+// Importación de logos para tema claro y oscuro
+import LogoDark from "../../assets/LogoSelloG.png";
+import LogoLight from "../../assets/LogoSelloG2.png";
+
 const REPORTS = [
   {
     id: "r1",
@@ -99,6 +103,9 @@ const PETS = [
 export default function Home() {
   const router = useRouter();
   const { theme, colors } = useTheme();
+
+  // Selección automática de logo según el tema actual (LogoSelloG para dark, LogoSelloG2 para light)
+  const logoSrc = theme === "dark" ? LogoDark : LogoLight;
 
   const [adoptadosCount, setAdoptadosCount] = useState(0);
   const [denunciasCount, setDenunciasCount] = useState(0);
@@ -223,7 +230,7 @@ export default function Home() {
         </ImageBackground>
 
         {/* CONTENEDOR DESDE EL SOS HACIA ABAJO */}
-        <View style={{ backgroundColor: theme === "dark" ? "#0F172A" : colors.background, flex: 1 }}>
+        <View style={{ backgroundColor: theme === "dark" ? "#04070d" : colors.background, flex: 1 }}>
           {/* LÍNEA DE REACCIÓN INMEDIATA - SOS */}
           <View style={styles.sosContainer}>
             <View style={styles.sosLeftContent}>

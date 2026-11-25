@@ -15,8 +15,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker"; // npx expo install expo-image-picker
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router"; // IMPORTANTE: Para la navegacion
-import { useAuth } from "../../context/AuthContext"; // IMPORTANTE: Cambia la ruta segun tu proyecto
+import { useRouter } from "expo-router"; // Para la navegacion
+import { useAuth } from "../../context/AuthContext"; // Cambia la ruta
 import { useTheme } from "../../context/ThemeContext"; // Hook de temas
 
 import Navbar from "../../components/Navbar";

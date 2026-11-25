@@ -5,7 +5,7 @@
     "scheme": "selloguardian",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/LogoSelloG.png",
+    "icon": "./assets/LogoSelloG3.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true

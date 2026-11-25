@@ -1,17 +1,24 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, StatusBar } from "react-native";
+import { View, Text, TouchableOpacity, Image, StyleSheet, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // Importamos los insets para la altura segura
 import { useTheme } from "../context/ThemeContext";
 
-// Importamos el logo
-import logoSello from "../assets/LogoSelloG.png";
+// Importamos ambos logos para el cambio dinámico de tema
+import LogoDark from "../assets/LogoSelloG.png";
+import LogoLight from "../assets/LogoSelloG2.png";
 
 export default function Navbar({ unreadNotifications = 2 }) {
   const router = useRouter();
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets(); // Obtenemos el espacio real de la muesca/status bar
 
   const isDark = theme === "dark";
+  
+  // Selección automática del logo según el modo activo
+  const currentLogo = isDark ? LogoDark : LogoLight;
+
   // Colores adaptados al tema seleccionado (Modo claro/oscuro)
   const navbarBg = colors.navbar;
   const navbarBorder = colors.border;
@@ -30,6 +37,9 @@ export default function Navbar({ unreadNotifications = 2 }) {
           backgroundColor: navbarBg,
           borderBottomColor: navbarBorder,
           
+          // CORRECCIÓN CLAVE: Ajustamos el paddingTop sumando el espacio seguro del dispositivo
+          paddingTop: insets.top + (Platform.OS === 'ios' ? 4 : 8),
+
           // Sombra suave debajo del navbar
           shadowColor: "#000000",
           shadowOffset: { width: 0, height: 3 },
@@ -58,7 +68,7 @@ export default function Navbar({ unreadNotifications = 2 }) {
         </TouchableOpacity>
 
         <Image
-          source={logoSello}
+          source={currentLogo}
           style={styles.logoImage}
           resizeMode="contain"
         />
@@ -117,7 +127,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12, // Espacio inferior interno ideal para que no quede apretado
     borderBottomWidth: 1,
   },
   brandContainer: {
@@ -163,4 +173,4 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "bold",
   },
-});
+});  
