@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +21,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import styles from '../../styles/auth/Login';   // Estilos de Login
 
 const { width } = Dimensions.get('window');
 
@@ -36,11 +37,9 @@ const validationSchema = Yup.object().shape({
     .required('La contraseña es obligatoria'),
 });
 
-// ======================================================
 // COMPONENTES REUTILIZABLES
 // IMPORTANTE: Definidos fuera de la pantalla principal para 
 // evitar que pierdan el foco al escribir en los inputs.
-// ======================================================
 
 function Field({ formik, tema, name, label, icon, placeholder, ...inputProps }) {
   const hasError = formik.touched[name] && formik.errors[name];
@@ -137,6 +136,7 @@ function PasswordField({ formik, tema, name, label, placeholder, onForgotPress }
 export default function Login() {
   const router = useRouter();
   const { theme, colors } = useTheme();
+  const { login } = useAuth();  // Hook useAuth
 
   const isDark = theme === 'dark';
 
@@ -165,16 +165,16 @@ export default function Login() {
       remember: false,
     },
     validationSchema,
-    onSubmit: (values) => {
-      console.log('Iniciando sesión con:', values);
-      Alert.alert('Inicio de sesión', '¡Inicio de sesión exitoso!', [
-        {
-          text: 'Continuar',
-          onPress: () => {
-            router.replace('/(tabs)/Home');
-          },
-        },
-      ]);
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        // Guarda el token y carga el usuario
+        await login(values.email, values.password);
+        router.replace('/(tabs)/Home');
+      } catch (error) {
+        Alert.alert('No se pudo iniciar sesión', error.message);
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
@@ -308,181 +308,3 @@ export default function Login() {
     </SafeAreaView>
   );
 }
-
-// ======================================================
-// ESTILOS
-// ======================================================
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  keyboard: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-  },
-  topHeader: {
-    width: '100%',
-    height: 300,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 24,
-    paddingBottom: 60,
-  },
-  headerImage: {
-    transform: [{ scale: 1.15 }, { translateX: 25 }],
-  },
-  welcomeTextContainer: {
-    maxWidth: '75%',
-    alignItems: 'flex-start',
-  },
-  welcomeTitle: {
-    color: '#FFFFFF',
-    fontSize: 36,
-    lineHeight: 40,
-    fontWeight: '900',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.85)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
-  },
-  welcomeSubtitle: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.85)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  svgContainer: {
-    width: '100%',
-    height: 50,
-    marginTop: -50,
-    marginBottom: -1,
-    position: 'relative',
-  },
-  cardContainer: {
-    width: '100%',
-    paddingHorizontal: 28,
-    paddingTop: 8,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    marginBottom: 20,
-  },
-  group: {
-    marginBottom: 18,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  forgot: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    height: 52,
-    borderWidth: 1,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  inputError: {
-    borderColor: '#E11D48',
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  inputWithIcon: {
-    flex: 1,
-    height: '100%',
-    fontSize: 14,
-  },
-  passwordContainer: {
-    height: 52,
-    borderWidth: 1,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 16,
-    paddingRight: 14,
-  },
-  passwordInput: {
-    flex: 1,
-    height: '100%',
-    fontSize: 14,
-    marginLeft: 10,
-    marginRight: 10,
-  },
-  error: {
-    color: '#E11D48',
-    fontSize: 12,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-  remember: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 4,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderWidth: 1.5,
-    borderRadius: 11,
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rememberText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  loginButton: {
-    height: 54,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  divider: {
-    height: 1,
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 13,
-    marginRight: 6,
-  },
-  footerLink: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
